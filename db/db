@@ -46,16 +46,3 @@ INSERT INTO admins (username, password, fullname, email, role)
 VALUES ('admin', '$2y$10$XU0j7UDiD69jZc/fDNQvKO7hwUAt2kgTCXNxKmDUkeaPmwRpcCgF.', 'HirayaFit Admin', 'leiumarsayco@gmail.com', 'super_admin');
 
 
--- First, create the cart table to store cart items
-CREATE TABLE cart (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    product_id VARCHAR(50) NOT NULL,
-    quantity INT NOT NULL DEFAULT 1,
-    size VARCHAR(20),
-    color VARCHAR(30),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY (user_id, product_id, size, color) -- Prevent duplicate entries
-);
