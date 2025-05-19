@@ -3,4 +3,4 @@
     
 
     
-</transactions>
+<transaction><transaction_id>TRX-682B514F7EB2A</transaction_id><user_id>1</user_id><transaction_date>2025-05-19 17:42:07</transaction_date><status>processing</status><payment_method>cod</payment_method><subtotal>1000</subtotal><shipping_fee>100</shipping_fee><total_amount>1100</total_amount><items><item><product_id>2003</product_id><product_name>Men's Muscle Tank</product_name><price>1000</price><quantity>1</quantity><color>black</color><size>S</size><subtotal>1000</subtotal></item></items><shipping_info><fullname>Leiumar Sayco</fullname><email>saycoleiumar15@gmail.com</email><phone>9633945919</phone><address>Talacsan San Rafael Bulacan</address><city>san rafael</city><postal_code>3008</postal_code><notes/></shipping_info></transaction></transactions>
