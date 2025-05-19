@@ -1,0 +1,56 @@
+CREATE TABLE users (
+   id INT AUTO_INCREMENT PRIMARY KEY,
+   fullname VARCHAR(100) NOT NULL,
+   email VARCHAR(100) NOT NULL UNIQUE,
+   username VARCHAR(50) NOT NULL UNIQUE,
+   password VARCHAR(255) NOT NULL,
+   address TEXT,
+   phone VARCHAR(20),
+   profile_image VARCHAR(255), -- File name or path of the image
+   is_active BOOLEAN DEFAULT FALSE, 
+   
+   -- OTP fields for password reset
+   otp_code VARCHAR(6), -- 6-digit OTP code
+   otp_purpose ENUM('PASSWORD_RESET', 'EMAIL_VERIFICATION', 'LOGIN'),
+   otp_created_at TIMESTAMP NULL, -- When the OTP was created
+   otp_expires_at TIMESTAMP NULL, -- When the OTP expires
+   otp_is_used BOOLEAN DEFAULT FALSE, -- Whether the OTP has been used
+   
+   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+   
+   INDEX (email, otp_code, otp_is_used) -- Index for faster OTP lookups
+);
+
+CREATE TABLE admins (
+  admin_id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  fullname VARCHAR(100) NOT NULL,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  role VARCHAR(50) NOT NULL, -- Role can be 'super_admin', 'content_manager', etc.
+  is_active BOOLEAN DEFAULT TRUE,
+  last_login TIMESTAMP NULL,
+  profile_image VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Insert a default admin account (you should change this password in production)
+INSERT INTO admins (username, password, fullname, email, role)
+VALUES ('admin', '$2y$10$someHashedPasswordHere', 'HirayaFit Admin', 'admin@hirayafit.com', 'super_admin');
+
+
+-- Add remember_token column to users table
+ALTER TABLE users ADD COLUMN remember_token VARCHAR(64) NULL;
+
+-- Add remember_token column to admins table  
+ALTER TABLE admins ADD COLUMN remember_token VARCHAR(64) NULL;
+
+-- Add last_login column to users table if it doesn't exist
+ALTER TABLE users ADD COLUMN last_login TIMESTAMP NULL;
+
+vjqugnnzpdldnlon
+
+
+

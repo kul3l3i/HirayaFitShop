@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HirayaFit - Premium Activewear</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/style/style.css">
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="container">
+            <div>FREE SHIPPING ON ORDERS OVER ₱4,000!</div>
+            <div>
+                <a href="#">Help</a>
+                <a href="#">Order Tracker</a>
+                <a href="#">Become a Member</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="navbar">
+                <a href="#" class="logo">Hiraya<span>Fit</span></a>
+                
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Search products...">
+                    <button onclick="searchProducts()">Search</button>
+                </div>
+                
+                <div class="nav-icons">
+                    <div class="account-dropdown" id="accountDropdown">
+                        <a href="#" id="accountBtn"><i class="fas fa-user"></i></a>
+                        <div class="account-dropdown-content" id="accountDropdownContent">
+                            <h3>My Account</h3>
+                            <a href="sign-in.php"><i class="fas fa-sign-in-alt"></i> Sign In</a>
+                            <a href="sign-up.php"><i class="fas fa-user-plus"></i> Sign Up</a>
+                            <a href="#orders"><i class="fas fa-box"></i> Track Orders</a>
+                            <a href="#wishlist"><i class="fas fa-heart"></i> My Wishlist</a>
+                        </div>
+                    </div>
+                    <a href="#"><i class="fas fa-heart"></i></a>
+                    <a href="#" id="cartBtn">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-count" id="cartCount">0</span>
+                    </a>
+                </div>
+                
+                <button class="menu-toggle" id="mobileMenuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Simplified Navigation -->
+    <nav class="main-nav" id="mainNav">
+        <a href="index.html" class="active">HOME</a>
+        <a href="shop.html">SHOP</a>
+        <a href="men.html">MEN</a>
+        <a href="women.html">WOMEN</a>
+        <a href="foot.html">FOOTWEAR</a>
+        <a href="acces.html">ACCESSORIES</a>
+        <a href="about.html">ABOUT</a>
+        <a href="contact.html">CONTACT</a>
+    </nav>
+    
+    <!-- Hero Section with Video -->
+    <section class="hero">
+        <!-- Video Background -->
+        <video class="hero-video" autoplay loop muted playsinline>
+            <source src="images/homevid.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="hero-overlay"></div>
+        
+        <div class="hero-content">
+            <h1>PERFORMANCE MEETS STYLE</h1>
+            <p>Discover the latest collection of activewear designed for maximum comfort and performance.</p>
+            
+            
+            <div class="gender-buttons">
+                <a href="men.html" class="gender-btn">FOR HIM</a>
+                <a href="women.html" class="gender-btn">FOR HER</a>
+            </div>
+        </div>
+    </section>
+    
+    
+    <!-- Featured Categories Section -->
+<section class="featured-categories">
+    <div class="container">
+        <h2 class="section-title">Shop By Category</h2>
+        <p class="section-description">Find your perfect gear from our curated collections</p>
+        
+        <div class="categories-grid">
+            <div class="category-card">
+                <div class="category-image">
+                    <img src="images/colmen.webp" alt="Men's Activewear">
+                    <div class="category-overlay">
+                        <h3>Men's Collection</h3>
+                        <a href="men.html" class="category-btn">EXPLORE</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="category-card">
+                <div class="category-image">
+                    <img src="images/colwomens.jpg" alt="Women's Activewear">
+                    <div class="category-overlay">
+                        <h3>Women's Collection</h3>
+                        <a href="women.html" class="category-btn">EXPLORE</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="category-card">
+                <div class="category-image">
+                    <img src="images/colfoot.jpg" alt="Footwear">
+                    <div class="category-overlay">
+                        <h3>Footwear</h3>
+                        <a href="foot.html" class="category-btn">EXPLORE</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="category-card">
+                <div class="category-image">
+                    <img src="images/colacc.jpg" alt="Accessories">
+                    <div class="category-overlay">
+                        <h3>Accessories</h3>
+                        <a href="acces.html" class="category-btn">EXPLORE</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+<!-- Featured Collections Section -->
+<section class="featured-collections">
+    <div class="container">
+        <h2 class="section-title">Featured Collections</h2>
+        <p class="section-description">Premium activewear designed for Filipino fitness enthusiasts</p>
+        
+        <div class="collections-wrapper">
+            <div class="collection-item men">
+                <div class="collection-image">
+                    <img src="images/mencol.webp" alt="Men's Featured Collection">
+                    <div class="collection-overlay">
+                        <div class="collection-content">
+                            <h3>Performance Essentials</h3>
+                            <p>Engineered for comfort and durability</p>
+                            <a href="men.html" class="btn">SHOP MEN</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="collection-item women">
+                <div class="collection-image">
+                    <img src="images/f.jfif" alt="Women's Featured Collection">
+                    <div class="collection-overlay">
+                        <div class="collection-content">
+                            <h3>Active Lifestyle</h3>
+                            <p>Stylish designs for every workout</p>
+                            <a href="women.html" class="btn">SHOP WOMEN</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<section id="homeFeatured" class="featured-products-section">
+    <!-- The top 4 featured products will be loaded here -->
+  </section>
+
+<!-- About & Contact Navigation Section -->
+<section class="shop-promo">
+    <div class="container">
+        <div class="section-title">
+            <h2>Discover Our Story</h2>
+            <p>Learn more about who we are and how to connect with us</p>
+        </div>
+        <div class="shop-promo-wrapper">
+            <div class="shop-promo-left">
+                <div class="promo-card about">
+                    <div class="promo-image">
+                        <img src="images/about-us.jpg" alt="About Our Company">
+                    </div>
+                    <div class="promo-content">
+                        <h3>About Us</h3>
+                        <p>Learn about our story and mission</p>
+                        <a href="about.html" class="promo-link">READ MORE <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="shop-promo-right">
+                <div class="promo-card contact">
+                    <div class="promo-image">
+                        <img src="images/contact-us.jpg" alt="Contact Our Team">
+                    </div>
+                    <div class="promo-content">
+                        <h3>Contact Us</h3>
+                        <p>Get in touch with our team</p>
+                        <a href="contact.html" class="promo-link">REACH OUT <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </div>
+                
+                <div class="promo-highlight">
+                    <div class="highlight-content">
+                        <span class="badge">LOCATIONS</span>
+                        <h3>Find Us</h3>
+                        <p>Visit our stores nationwide</p>
+                        <a href="contact.html#map" class="highlight-btn">VIEW ALL</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+ <!-- Features Section -->
+ <section class="section features">
+    <div class="container">
+        <div class="features-grid">
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <h3 class="feature-title">Free Shipping</h3>
+                <p class="feature-text">On all orders over ₱4,0000</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="fas fa-sync-alt"></i>
+                </div>
+                <h3 class="feature-title">Easy Returns</h3>
+                <p class="feature-text">30 days easy return policy</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3 class="feature-title">Secure Payment</h3>
+                <p class="feature-text">100% secure payment methods</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <h3 class="feature-title">24/7 Support</h3>
+                <p class="feature-text">Dedicated customer support</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="container cta-container">
+        <h2>Join the HirayaFit Community</h2>
+        <p>Become part of our growing community of fitness enthusiasts who believe in the power of great activewear to transform their fitness journey.</p>
+        <a href="shop.html" class="btn">Shop Collection</a>
+        <a href="sign-up.html" class="btn btn-outline">Join Now</a>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="footer-container">
+            <div class="footer-column">
+                <h3>About HirayaFit</h3>
+                <p>We create premium activewear designed to inspire confidence and support your fitness goals while promoting sustainability.</p>
+                <div class="footer-social">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-pinterest"></i></a>
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Quick Links</h3>
+                <ul class="footer-links">
+                    <li><a href="shop.html">Shop Collection</a></li>
+                    <li><a href="men.html">Men's Activewear</a></li>
+                    <li><a href="women.html">Women's Activewear</a></li>
+                    <li><a href="foot.html">Footwear</a></li>
+                    <li><a href="acces.html">Accessories</a></li>
+                    <li><a href="sale.html">Sale Items</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Customer Service</h3>
+                <ul class="footer-links">
+                    <li><a href="contact.html">Contact Us</a></li>
+                    <li><a href="faqs.html">FAQs</a></li>
+                    <li><a href="shipping.html">Shipping & Returns</a></li>
+                    <li><a href="size-guide.html">Size Guide</a></li>
+                    <li><a href="privacy.html">Privacy Policy</a></li>
+                    <li><a href="terms.html">Terms & Conditions</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Contact Info</h3>
+                <div class="footer-contact">
+                    <div class="contact-item">
+                        <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="contact-text">123 Fitness Street, Active City, AC 12345</div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon"><i class="fas fa-phone-alt"></i></div>
+                        <div class="contact-text">+1 (555) 123-4567</div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+                        <div class="contact-text">support@hirayafit.com</div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon"><i class="fas fa-clock"></i></div>
+                        <div class="contact-text">Mon-Fri: 9am - 6pm EST</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="copyright">
+            &copy; 2025 HirayaFit. All Rights Reserved.
+        </div>
+    </div>
+</footer>
+    <!-- Script for mobile menu and account dropdown functionality -->
+   <script src="/js/home.js"></script>
+   <script src="/js/search.js"></script>
+   <script src="js/featured.js"></script>
+   <script src="/js/details.js"></script>
+   <script src="/js/cart.js"></script>
+
+</body>
+</html>

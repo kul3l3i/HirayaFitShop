@@ -1,0 +1,750 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+
+<store>
+    <metadata>
+        <name>HirayaFit Store</name>
+        <version>1.0</version>
+        <currency>PHP</currency>
+        <last_updated>2025-04-10</last_updated>
+    </metadata>
+
+    <categories>
+        <category>Accessories</category>
+        <category>Men's Activewear</category>
+        <category>Women's Activewear</category>
+        <category>Footwear</category> <!-- ← Added new category here -->
+    </categories>
+    
+    <products>
+        <product>
+            <id>2001</id>
+            <name>Men's Compression Shirt</name>
+            <category>Men's Activewear</category>
+            <price>1200</price>
+            <currency>PHP</currency>
+            <description>Breathable, sweat-wicking compression shirt for workouts</description>
+            <image>images/mens_compression_shirt.jpg</image>
+            <stock>45</stock>
+            <sizes>
+                <size>S</size>
+                <size>M</size>
+                <size>L</size>
+                <size>XL</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>Navy</color>
+                <color>Red</color>
+            </colors>
+            <rating>4.5</rating>
+            <review_count>28</review_count>
+            <featured>true</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2002</id>
+            <name>Men's Jogger Pants</name>
+            <category>Men's Activewear</category>
+            <price>1800</price>
+            <currency>PHP</currency>
+            <description>Comfort-fit jogger pants with zippered pockets</description>
+            <image>images/mens_jogger_pants.webp</image>
+            <stock>32</stock>
+            <sizes>
+                <size>S</size>
+                <size>M</size>
+                <size>L</size>
+                <size>XL</size>
+                <size>XXL</size>
+            </sizes>
+            <colors>
+                <color>Gray</color>
+                <color>Black</color>
+                <color>Navy</color>
+            </colors>
+            <rating>4.3</rating>
+            <review_count>16</review_count>
+            <featured>false</featured>
+            <on_sale>true</on_sale>
+        </product>
+        <product>
+            <id>2003</id>
+            <name>Men's Muscle Tank</name>
+            <category>Men's Activewear</category>
+            <price>1000</price>
+            <currency>PHP</currency>
+            <description>Sleeveless muscle tank for intense gym sessions</description>
+            <image>images/mens_muscle_tank.jpg</image>
+            <stock>25</stock>
+            <sizes>
+                <size>S</size>
+                <size>M</size>
+                <size>L</size>
+                <size>XL</size>
+            </sizes>
+            <colors>
+                <color>White</color>
+                <color>Black</color>
+                <color>Gray</color>
+            </colors>
+            <rating>4.0</rating>
+            <review_count>12</review_count>
+            <featured>false</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2004</id>
+            <name>Men's Training Shorts</name>
+            <category>Men's Activewear</category>
+            <price>1100</price>
+            <currency>PHP</currency>
+            <description>Lightweight shorts with built-in liner and pockets</description>
+            <image>images/mens_training_shorts.jpg</image>
+            <stock>38</stock>
+            <sizes>
+                <size>S</size>
+                <size>M</size>
+                <size>L</size>
+                <size>XL</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>Blue</color>
+                <color>Gray</color>
+            </colors>
+            <rating>4.6</rating>
+            <review_count>22</review_count>
+            <featured>true</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2005</id>
+            <name>Men's Zipper Hoodie</name>
+            <category>Men's Activewear</category>
+            <price>2000</price>
+            <currency>PHP</currency>
+            <description>Warm and breathable zip hoodie for pre/post workout</description>
+            <image>images/mens_zipper_hoodie.jpg</image>
+            <stock>18</stock>
+            <sizes>
+                <size>S</size>
+                <size>M</size>
+                <size>L</size>
+                <size>XL</size>
+            </sizes>
+            <colors>
+                <color>Gray</color>
+                <color>Black</color>
+                <color>Navy</color>
+            </colors>
+            <rating>4.4</rating>
+            <review_count>15</review_count>
+            <featured>false</featured>
+            <on_sale>true</on_sale>
+        </product>
+        <product>
+            <id>2006</id>
+            <name>Women's High-Waist Leggings</name>
+            <category>Women's Activewear</category>
+            <price>1500</price>
+            <currency>PHP</currency>
+            <description>Seamless, squat-proof leggings with high waistband</description>
+            <image>images/womens_leggings.jpg</image>
+            <stock>42</stock>
+            <sizes>
+                <size>XS</size>
+                <size>S</size>
+                <size>M</size>
+                <size>L</size>
+                <size>XL</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>Navy</color>
+                <color>Maroon</color>
+            </colors>
+            <rating>4.8</rating>
+            <review_count>48</review_count>
+            <featured>true</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2007</id>
+            <name>Women's Sports Bra</name>
+            <category>Women's Activewear</category>
+            <price>950</price>
+            <currency>PHP</currency>
+            <description>Supportive and stylish sports bra for medium-impact workouts</description>
+            <image>images/womens_sports_bra.jpg</image>
+            <stock>35</stock>
+            <sizes>
+                <size>XS</size>
+                <size>S</size>
+                <size>M</size>
+                <size>L</size>
+                <size>XL</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>White</color>
+                <color>Pink</color>
+                <color>Blue</color>
+            </colors>
+            <rating>4.5</rating>
+            <review_count>32</review_count>
+            <featured>true</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2008</id>
+            <name>Women's Crop Top</name>
+            <category>Women's Activewear</category>
+            <price>1050</price>
+            <currency>PHP</currency>
+            <description>Soft and stretchy crop top for everyday training</description>
+            <image>images/womens_crop_top.jpg</image>
+            <stock>29</stock>
+            <sizes>
+                <size>XS</size>
+                <size>S</size>
+                <size>M</size>
+                <size>L</size>
+            </sizes>
+            <colors>
+                <color>White</color>
+                <color>Black</color>
+                <color>Pink</color>
+            </colors>
+            <rating>4.2</rating>
+            <review_count>18</review_count>
+            <featured>false</featured>
+            <on_sale>true</on_sale>
+        </product>
+        <product>
+            <id>2009</id>
+            <name>Women's Biker Shorts</name>
+            <category>Women's Activewear</category>
+            <price>1150</price>
+            <currency>PHP</currency>
+            <description>High-rise biker shorts with moisture-wicking fabric</description>
+            <image>images/womens_biker_shorts.jpg</image>
+            <stock>30</stock>
+            <sizes>
+                <size>XS</size>
+                <size>S</size>
+                <size>M</size>
+                <size>L</size>
+                <size>XL</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>Navy</color>
+                <color>Gray</color>
+            </colors>
+            <rating>4.4</rating>
+            <review_count>25</review_count>
+            <featured>false</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2010</id>
+            <name>Women's Pullover Hoodie</name>
+            <category>Women's Activewear</category>
+            <price>1800</price>
+            <currency>PHP</currency>
+            <description>Cozy pullover hoodie with breathable fleece</description>
+            <image>images/womens_hoodie.jpg</image>
+            <stock>22</stock>
+            <sizes>
+                <size>XS</size>
+                <size>S</size>
+                <size>M</size>
+                <size>L</size>
+                <size>XL</size>
+            </sizes>
+            <colors>
+                <color>Pink</color>
+                <color>Gray</color>
+                <color>White</color>
+            </colors>
+            <rating>4.3</rating>
+            <review_count>14</review_count>
+            <featured>false</featured>
+            <on_sale>true</on_sale>
+        </product>
+        <product>
+            <id>2011</id>
+            <name>Unisex Gym Duffel Bag</name>
+            <category>Accessories</category>
+            <price>1600</price>
+            <currency>PHP</currency>
+            <description>Spacious, water-resistant gym bag with multiple compartments</description>
+            <image>images/gym_bag.jpg</image>
+            <stock>15</stock>
+            <sizes>
+                <size>One Size</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>Navy</color>
+                <color>Gray</color>
+            </colors>
+            <rating>4.7</rating>
+            <review_count>35</review_count>
+            <featured>true</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2012</id>
+            <name>Yoga Mat</name>
+            <category>Accessories</category>
+            <price>900</price>
+            <currency>PHP</currency>
+            <description>Non-slip, eco-friendly yoga mat with carrying strap</description>
+            <image>images/yoga_mat.jpg</image>
+            <stock>25</stock>
+            <sizes>
+                <size>Standard</size>
+            </sizes>
+            <colors>
+                <color>Purple</color>
+                <color>Blue</color>
+                <color>Black</color>
+                <color>Pink</color>
+            </colors>
+            <rating>4.5</rating>
+            <review_count>42</review_count>
+            <featured>false</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2013</id>
+            <name>Cap with Sweatband</name>
+            <category>Accessories</category>
+            <price>500</price>
+            <currency>PHP</currency>
+            <description>Adjustable cap with built-in sweat-absorbing band</description>
+            <image>images/cap.jpg</image>
+            <stock>40</stock>
+            <sizes>
+                <size>Adjustable</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>White</color>
+                <color>Navy</color>
+                <color>Red</color>
+            </colors>
+            <rating>4.2</rating>
+            <review_count>19</review_count>
+            <featured>false</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2014</id>
+            <name>Gym Towel</name>
+            <category>Accessories</category>
+            <price>300</price>
+            <currency>PHP</currency>
+            <description>Quick-dry microfiber towel perfect for workouts</description>
+            <image>images/gym_towel.jpg</image>
+            <stock>55</stock>
+            <sizes>
+                <size>Small</size>
+                <size>Medium</size>
+                <size>Large</size>
+            </sizes>
+            <colors>
+                <color>Gray</color>
+                <color>Black</color>
+                <color>Blue</color>
+                <color>Pink</color>
+            </colors>
+            <rating>4.1</rating>
+            <review_count>12</review_count>
+            <featured>false</featured>
+            <on_sale>true</on_sale>
+        </product>
+        <product>
+            <id>2015</id>
+            <name>Water Bottle</name>
+            <category>Accessories</category>
+            <price>450</price>
+            <currency>PHP</currency>
+            <description>BPA-free leak-proof bottle with time tracker</description>
+            <image>images/water_bottle.jpg</image>
+            <stock>65</stock>
+            <sizes>
+                <size>500ml</size>
+                <size>1L</size>
+            </sizes>
+            <colors>
+                <color>Blue</color>
+                <color>Pink</color>
+                <color>Black</color>
+                <color>Clear</color>
+            </colors>
+            <rating>4.6</rating>
+            <review_count>38</review_count>
+            <featured>true</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2016</id>
+            <name>Fitness Tracker Watch</name>
+            <category>Accessories</category>
+            <price>3200</price>
+            <currency>PHP</currency>
+            <description>Tracks heart rate, steps, and sleep with mobile sync</description>
+            <image>images/fitness_watch.jpg</image>
+            <stock>12</stock>
+            <sizes>
+                <size>One Size</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>Silver</color>
+                <color>Rose Gold</color>
+            </colors>
+            <rating>4.8</rating>
+            <review_count>24</review_count>
+            <featured>true</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2017</id>
+            <name>Resistance Bands Set</name>
+            <category>Accessories</category>
+            <price>850</price>
+            <currency>PHP</currency>
+            <description>Set of 5 resistance bands with varying tension levels</description>
+            <image>images/resistance_bands.jpg</image>
+            <stock>28</stock>
+            <sizes>
+                <size>Standard Set</size>
+            </sizes>
+            <colors>
+                <color>Multi-color</color>
+            </colors>
+            <rating>4.7</rating>
+            <review_count>45</review_count>
+            <featured>false</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2018</id>
+            <name>Training Shoes</name>
+            <category>Footwear</category>
+            <price>2800</price>
+            <currency>PHP</currency>
+            <description>Lightweight and supportive training shoes</description>
+            <image>images/training_shoes.jpg</image>
+            <stock>20</stock>
+            <sizes>
+                <size>8</size>
+                <size>9</size>
+                <size>10</size>
+                <size>11</size>
+                <size>12</size>
+            </sizes>
+            <colors>
+                <color>Black/White</color>
+                <color>Gray/Blue</color>
+                <color>All Black</color>
+            </colors>
+            <rating>4.5</rating>
+            <review_count>32</review_count>
+            <featured>true</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2019</id>
+            <name>Running Shoes</name>
+            <category>Footwear</category>
+            <price>3000</price>
+            <currency>PHP</currency>
+            <description>Breathable running shoes with flexible outsole</description>
+            <image>images/running_shoes.jpg</image>
+            <stock>18</stock>
+            <sizes>
+                <size>8</size>
+                <size>9</size>
+                <size>10</size>
+                <size>11</size>
+            </sizes>
+            <colors>
+                <color>Blue/White</color>
+                <color>Red/Black</color>
+                <color>Gray/Orange</color>
+            </colors>
+            <rating>4.7</rating>
+            <review_count>28</review_count>
+            <featured>true</featured>
+            <on_sale>true</on_sale>
+        </product>
+        <product>
+            <id>2020</id>
+            <name>Slip-On Sneakers</name>
+            <category>Footwear</category>
+            <price>2200</price>
+            <currency>PHP</currency>
+            <description>Casual slip-on sneakers with memory foam sole</description>
+            <image>images/slip_on_sneakers.jpg</image>
+            <stock>24</stock>
+            <sizes>
+                <size>7</size>
+                <size>8</size>
+                <size>9</size>
+                <size>10</size>
+                <size>11</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>Gray</color>
+                <color>Navy</color>
+            </colors>
+            <rating>4.3</rating>
+            <review_count>16</review_count>
+            <featured>false</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2021</id>
+            <name>Men's Cross Trainers</name>
+            <category>Footwear</category>
+            <price>3100</price>
+            <currency>PHP</currency>
+            <description>Multi-surface grip shoes for gym and outdoor use</description>
+            <image>images/cross_trainers.jpg</image>
+            <stock>15</stock>
+            <sizes>
+                <size>8</size>
+                <size>9</size>
+                <size>10</size>
+                <size>11</size>
+                <size>12</size>
+            </sizes>
+            <colors>
+                <color>Black/Red</color>
+                <color>Gray/Yellow</color>
+                <color>Blue/White</color>
+            </colors>
+            <rating>4.6</rating>
+            <review_count>22</review_count>
+            <featured>false</featured>
+            <on_sale>true</on_sale>
+        </product>
+        <product>
+            <id>2022</id>
+            <name>Women's Training Shoes</name>
+            <category>Footwear</category>
+            <price>2700</price>
+            <currency>PHP</currency>
+            <description>Supportive arch design for high-intensity training</description>
+            <image>images/womens_training_shoes.jpg</image>
+            <stock>22</stock>
+            <sizes>
+                <size>5</size>
+                <size>6</size>
+                <size>7</size>
+                <size>8</size>
+                <size>9</size>
+            </sizes>
+            <colors>
+                <color>Pink/Gray</color>
+                <color>Black/Teal</color>
+                <color>White/Purple</color>
+            </colors>
+            <rating>4.5</rating>
+            <review_count>34</review_count>
+            <featured>true</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2023</id>
+            <name>Men's Ankle Socks (5-Pack)</name>
+            <category>Accessories</category>
+            <price>600</price>
+            <currency>PHP</currency>
+            <description>Breathable, cushioned socks for everyday use</description>
+            <image>images/ankle_socks.jpg</image>
+            <stock>45</stock>
+            <sizes>
+                <size>S (6-8)</size>
+                <size>M (8-10)</size>
+                <size>L (10-12)</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>White</color>
+                <color>Mixed</color>
+            </colors>
+            <rating>4.2</rating>
+            <review_count>15</review_count>
+            <featured>false</featured>
+            <on_sale>true</on_sale>
+        </product>
+        <product>
+            <id>2024</id>
+            <name>Women's Hair Tie Set</name>
+            <category>Accessories</category>
+            <price>200</price>
+            <currency>PHP</currency>
+            <description>No-slip hair ties ideal for workouts</description>
+            <image>images/hair_ties.jpg</image>
+            <stock>80</stock>
+            <sizes>
+                <size>One Size</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>Mixed Colors</color>
+            </colors>
+            <rating>4.0</rating>
+            <review_count>8</review_count>
+            <featured>false</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2025</id>
+            <name>Jump Rope</name>
+            <category>Accessories</category>
+            <price>700</price>
+            <currency>PHP</currency>
+            <description>Adjustable jump rope for cardio training</description>
+            <image>images/jump_rope.jpg</image>
+            <stock>35</stock>
+            <sizes>
+                <size>Adjustable</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>Blue</color>
+                <color>Red</color>
+            </colors>
+            <rating>4.4</rating>
+            <review_count>22</review_count>
+            <featured>false</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2026</id>
+            <name>Men's Long Sleeve Top</name>
+            <category>Men's Activewear</category>
+            <price>1400</price>
+            <currency>PHP</currency>
+            <description>Stretchy long sleeve shirt for cool weather workouts</description>
+            <image>images/mens_long_sleeve.jpg</image>
+            <stock>24</stock>
+            <sizes>
+                <size>S</size>
+                <size>M</size>
+                <size>L</size>
+                <size>XL</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>Gray</color>
+                <color>Navy</color>
+            </colors>
+            <rating>4.3</rating>
+            <review_count>19</review_count>
+            <featured>false</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2027</id>
+            <name>Women's Lightweight Jacket</name>
+            <category>Women's Activewear</category>
+            <price>1900</price>
+            <currency>PHP</currency>
+            <description>Windbreaker jacket for outdoor running</description>
+            <image>images/womens_jacket.jpg</image>
+            <stock>18</stock>
+            <sizes>
+                <size>XS</size>
+                <size>S</size>
+                <size>M</size>
+                <size>L</size>
+                <size>XL</size>
+            </sizes>
+            <colors>
+                <color>Pink</color>
+                <color>Black</color>
+                <color>Blue</color>
+            </colors>
+            <rating>4.5</rating>
+            <review_count>14</review_count>
+            <featured>false</featured>
+            <on_sale>true</on_sale>
+        </product>
+        <product>
+            <id>2028</id>
+            <name>Compression Calf Sleeves</name>
+            <category>Accessories</category>
+            <price>850</price>
+            <currency>PHP</currency>
+            <description>Helps with circulation and muscle recovery</description>
+            <image>images/calf_sleeves.jpg</image>
+            <stock>30</stock>
+            <sizes>
+                <size>S</size>
+                <size>M</size>
+                <size>L</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>Blue</color>
+                <color>Pink</color>
+            </colors>
+            <rating>4.4</rating>
+            <review_count>16</review_count>
+            <featured>false</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2029</id>
+            <name>Foam Roller</name>
+            <category>Accessories</category>
+            <price>1000</price>
+            <currency>PHP</currency>
+            <description>Textured foam roller for muscle massage</description>
+            <image>images/foam_roller.jpg</image>
+            <stock>20</stock>
+            <sizes>
+                <size>Standard</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>Blue</color>
+                <color>Green</color>
+            </colors>
+            <rating>4.7</rating>
+            <review_count>25</review_count>
+            <featured>false</featured>
+            <on_sale>false</on_sale>
+        </product>
+        <product>
+            <id>2030</id>
+            <name>Wrist Wraps</name>
+            <category>Accessories</category>
+            <price>550</price>
+            <currency>PHP</currency>
+            <description>Adjustable wrist wraps for weightlifting support</description>
+            <image>images/wrist_wraps.jpg</image>
+            <stock>40</stock>
+            <sizes>
+                <size>One Size</size>
+            </sizes>
+            <colors>
+                <color>Black</color>
+                <color>Red</color>
+                <color>Blue</color>
+            </colors>
+            <rating>4.3</rating>
+            <review_count>18</review_count>
+            <featured>false</featured>
+            <on_sale>true</on_sale>
+        </product>
+    </products>
+</store>

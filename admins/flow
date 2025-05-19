@@ -1,0 +1,102 @@
+/admin
+  /includes
+    header.php (with admin navigation)
+    footer.php
+  index.php (dashboard)
+  categories.php (add/manage categories)
+  products.php (list all products)
+  add_product.php
+  edit_product.php
+  users.php (list all users)
+  delete_user.php (with password confirmation)
+  stock.php (stock management)
+  transactions.php (view sales and generate reports)
+
+  This implementation satisfies all the administrator privileges requirements from the image, using XML for all the data storage. The admin can add/edit products, manage stock, view transactions, generate reports, and manage users - all with appropriate security measures like password confirmation for sensitive operations.
+
+
+
+  edi kapag gumawa ako ng function para sa website ang ma update o ang maninipulate ay ang mga xml files tama ba for example nag order edi sa transaction mkikta yon
+
+Tama po! Kapag gumawa kayo ng functions para sa website, ang mga XML files ay siyang maa-update at mamamanipulate.
+
+Ganito po ang magiging flow:
+
+Pag-order ng user:
+Kapag nag-checkout ang user, gagawa kayo ng entry sa transactions.xml
+Babawasan ang stock sa store_data.xml para sa mga produktong binili
+Idadagdag ang record sa inventory_log.xml para sa pagbabawas ng stock
+Ia-update o buburahin ang cart data sa carts.xml
+Pag-login ng user:
+Che-check sa users.xml kung valid ang credentials
+Kung successful, gagawin ang session at cookies
+Pag-add to cart:
+Che-check sa store_data.xml kung may available stock
+Mag-aadd ng item sa carts.xml para sa user na iyon
+Admin functions:
+Kapag nag-update ng product, maa-update ang store_data.xml
+Kapag nag-delete ng user, maa-update ang users.xml
+Kapag dinagdagan ang stock, maa-update ang store_data.xml at inventory_log.xml
+Ang XML files ay gagana tulad ng database tables sa isang traditional database. Bawat file ay katumbas ng isang table, at ang mga operations (SELECT, INSERT, UPDATE, DELETE) ay gagawin gamit ang PHP's SimpleXML o DOMDocument functions.
+
+
+// Load XML files
+$storeXml = simplexml_load_file('data/store_data.xml');
+$transactionsXml = simplexml_load_file('data/transactions.xml');
+$inventoryLogXml = simplexml_load_file('data/inventory_log.xml');
+
+// Create new transaction
+$newTransaction = $transactionsXml->addChild('transaction');
+$newTransaction->addChild('id', 'T' . time()); // Generate unique ID
+$newTransaction->addChild('user_id', $_SESSION['user_id']);
+$newTransaction->addChild('date', date('Y-m-d H:i:s'));
+$newTransaction->addChild('amount', $totalAmount);
+$newTransaction->addChild('status', 'completed');
+$newTransaction->addChild('payment_method', 'paypal');
+
+// Add items to transaction
+$items = $newTransaction->addChild('items');
+foreach($cart as $item) {
+    $newItem = $items->addChild('item');
+    $newItem->addChild('product_id', $item['product_id']);
+    $newItem->addChild('quantity', $item['quantity']);
+    $newItem->addChild('price', $item['price']);
+    
+    // Update product stock in store_data.xml
+    foreach($storeXml->products->product as $product) {
+        if((string)$product->id == $item['product_id']) {
+            $currentStock = (int)$product->stock;
+            $newStock = $currentStock - $item['quantity'];
+            $product->stock = $newStock;
+            
+            // Log inventory change
+            $logEntry = $inventoryLogXml->addChild('entry');
+            $logEntry->addChild('id', 'IL' . time() . rand(1000, 9999));
+            $logEntry->addChild('product_id', $item['product_id']);
+            $logEntry->addChild('previous_stock', $currentStock);
+            $logEntry->addChild('new_stock', $newStock);
+            $logEntry->addChild('change', '-' . $item['quantity']);
+            $logEntry->addChild('reason', 'Order #' . (string)$newTransaction->id);
+            $logEntry->addChild('admin_id', 'system');
+            $logEntry->addChild('timestamp', date('Y-m-d H:i:s'));
+            
+            break;
+        }
+    }
+}
+
+// Add shipping info
+$shipping = $newTransaction->addChild('shipping');
+$shipping->addChild('address', $orderData['address']);
+$shipping->addChild('contact', $orderData['contact']);
+$shipping->addChild('status', 'processing');
+
+// Save updated XML files
+$transactionsXml->asXML('data/transactions.xml');
+$storeXml->asXML('data/store_data.xml');
+$inventoryLogXml->asXML('data/inventory_log.xml');
+
+// Clear user's cart
+// (Code to remove user's cart from carts.xml)
+
+pede ba baguhin mo ang name ng aking website gawin mong  HirayaFit ang name at improve mopa at paganahin mo search button kung saan naka base sya sa product.xml\ file at pati ang details like price in peso dapat ung mga buttons samay nav kapag pinindot ung mga caetogories ay lalalabas yung mga products nayon basts ayusin mo ung parang pang e commerce talaga mo gamit ka frame work pero dapat maayos padin ang mga function and design
