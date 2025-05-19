@@ -560,6 +560,10 @@ $_SESSION['cart_count'] = count($cartItems);
         </div>
     </footer>
 
+    <script src="js/home.js"></script>
+<script>console.log('After home.js');</script>
+
+
     <script>
         document.querySelectorAll('.cart-item .update-button').forEach(button => {
             button.addEventListener('click', () => updateCartItem(button));
