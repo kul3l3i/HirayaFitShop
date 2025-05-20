@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <cart>
     
-</cart>
+<item><id>item_682beac4009f9</id><user_id>1</user_id><product_id>2007</product_id><product_name>Women's Sports Bra</product_name><image>images/womens_sports_bra.jpg</image><price>950</price><color>black</color><size>XS</size><quantity>2</quantity><timestamp>2025-05-20 04:37:22</timestamp></item><item><id>item_682beaf9dbb65</id><user_id>1</user_id><product_id>2007</product_id><product_name>Women's Sports Bra</product_name><image>images/womens_sports_bra.jpg</image><price>950</price><color>white</color><size>L</size><quantity>1</quantity><timestamp>2025-05-20 04:37:45</timestamp></item></cart>
