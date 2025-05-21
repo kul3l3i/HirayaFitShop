@@ -12,7 +12,7 @@
         <category>Men's Activewear</category>
         <category>Women's Activewear</category>
         <category>Footwear</category> <!-- ← Added new category here -->
-    <category>Supplement</category></categories>
+    <category>Supplement</category><category>Equipment</category></categories>
     
     <products>
         <product>
@@ -745,5 +745,5 @@
             <featured>false</featured>
             <on_sale>true</on_sale>
         </product>
-    </products>
+    <product><id>2031</id><name>dumbell</name><category>Equipment</category><price>500</price><currency>PHP</currency><description>lIGHTWEIGHT</description><image>uploads/IMG20231017092337.jpg</image><stock>10</stock><sizes><size>10kg</size><size>20kg</size></sizes><colors/><rating>4.0</rating><review_count>0</review_count><featured>false</featured><on_sale>false</on_sale></product></products>
 </store>

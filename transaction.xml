@@ -3,4 +3,4 @@
     
 
     
-</transactions>
+<transaction><transaction_id>TRX-682C412F2B9F2</transaction_id><user_id>2</user_id><transaction_date>2025-05-20 10:45:35</transaction_date><status>processing</status><payment_method>gcash</payment_method><subtotal>2700</subtotal><shipping_fee>100</shipping_fee><total_amount>2800</total_amount><items><item><product_id>2022</product_id><product_name>Women's Training Shoes</product_name><price>2700</price><quantity>1</quantity><color>Pink/Gray</color><size>5</size><subtotal>2700</subtotal></item></items><shipping_info><fullname>Lai Rodriguez</fullname><email>rodriguez.elx@gmail.com</email><phone>9633945919</phone><address>Caingin San Rafael Bulacan</address><city>san rafael</city><postal_code>3008</postal_code><notes>sa bahay ba pula</notes></shipping_info></transaction></transactions>
