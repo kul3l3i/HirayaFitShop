@@ -15,13 +15,11 @@ $db_user = 'u801377270_hiraya_2025'; // Change to your DB username
 $db_pass = 'Hiraya_2025';     // Change to your DB password
 $db_name = 'u801377270_hiraya_2025'; // Change to your DB name
 
-// Create database connection
-$conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+session_start();
+include 'db_connect.php';
+// Initialize variables
+$error = '';
+$username_email = '';
 
 // Define variables
 $importSuccess = false;

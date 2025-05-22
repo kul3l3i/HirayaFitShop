@@ -5,26 +5,19 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Include your environment-aware database connection
+include 'db_connect.php';
 
+// Initialize variables
+$error = '';
+$username_email = '';
 // Check if user is logged in
 $loggedIn = isset($_SESSION['user_id']);
 $user = null;
 
 // If user is logged in, fetch their information
 if ($loggedIn) {
-    // Database connection
-    $db_host = 'localhost';
-    $db_user = 'u801377270_hiraya_2025'; // Change to your database username
-    $db_pass = 'Hiraya_2025'; // Change to your database password
-    $db_name = 'u801377270_hiraya_2025'; // Replace with your actual database name
-    
-    // Create connection
-    $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
-    
-    // Check connection
-    if ($conn->connect_error) {
-        die("Connection failed: " . $conn->connect_error);
-    }
+ 
     
     // Prepare and execute query to get user details
     $stmt = $conn->prepare("SELECT id, fullname, username, email, profile_image FROM users WHERE id = ?");

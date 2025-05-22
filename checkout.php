@@ -22,20 +22,12 @@ if (!isset($_SESSION['current_transaction'])) {
 
 $transactionId = $_SESSION['current_transaction'];
 
-// Database connection
-$db_host = 'localhost';
-$db_user = 'u801377270_hiraya_2025'; // Change to your database username
-$db_pass = 'Hiraya_2025'; // Change to your database password
-$db_name = 'u801377270_hiraya_2025'; // Replace with your actual database name
+// Include your environment-aware database connection
+include 'db_connect.php';
 
-// Create connection
-$conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-
+// Initialize variables
+$error = '';
+$username_email = '';
 // Fetch user details
 $stmt = $conn->prepare("SELECT id, fullname, username, email, address, phone, profile_image FROM users WHERE id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
@@ -354,7 +346,7 @@ if (isset($_POST['place_order'])) {
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group">
-                                        <label for="city">City *</label>
+                                        <label for="city">City/Municipality</label>
                                         <input type="text" id="city" name="city" required>
                                     </div>
                                     <div class="form-group">

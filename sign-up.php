@@ -2,8 +2,11 @@
 session_start();
 
 
-// Database connection
+session_start();
 include 'db_connect.php';
+// Initialize variables
+$error = '';
+$username_email = '';
 
 // Process form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
