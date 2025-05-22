@@ -4,9 +4,9 @@ session_start();
 
 // Database connection configuration
 $db_host = 'localhost';
-$db_user = 'root'; // Change to your DB username
-$db_pass = '';     // Change to your DB password
-$db_name = 'hirayafitdb'; // Change to your DB name
+$db_user = 'root';
+$db_pass = '';
+$db_name = 'hirayafitdb';
 
 // Create database connection
 $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
@@ -18,7 +18,6 @@ if ($conn->connect_error) {
 
 // Check if the user is logged in
 if (!isset($_SESSION['admin_id'])) {
-    // Redirect to login page if not logged in
     header("Location: sign-in.php");
     exit;
 }
@@ -31,16 +30,12 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows === 0) {
-    // Admin not found or not active, destroy session and redirect to login
     session_destroy();
     header("Location: sign-in.php");
     exit;
 }
 
-// Get admin details
 $admin = $result->fetch_assoc();
-
-// Set default role if not present
 if (!isset($admin['role'])) {
     $admin['role'] = 'Administrator';
 }
@@ -63,15 +58,82 @@ function getProfileImageUrl($profileImage) {
     if (!empty($profileImage) && file_exists("uploads/profiles/" . $profileImage)) {
         return "uploads/profiles/" . $profileImage;
     } else {
-        return "assets/images/default-avatar.png"; // Default image path
+        return "assets/images/default-avatar.png";
     }
 }
 
-// Get profile image URL
 $profileImageUrl = getProfileImageUrl($admin['profile_image']);
 
-// Close the statement
-$stmt->close();
+// Function to parse XML data (simulate reading from files)
+function parseTransactionData($file = 'transaction.xml') {
+    $xml = simplexml_load_file($file) or die('Failed to load transaction.xml');
+    $transactions = [];
+
+    foreach ($xml->transaction as $item) {
+        $transactions[] = [
+            'transaction_id' => (string)$item->transaction_id,
+            'user_id' => (int)$item->user_id,
+            'transaction_date' => (string)$item->transaction_date,
+            'status' => (string)$item->status,
+            'payment_method' => (string)$item->payment_method,
+            'subtotal' => (float)$item->subtotal,
+            'shipping_fee' => (float)$item->shipping_fee,
+            'total_amount' => (float)$item->total_amount,
+            'product_name' => (string)$item->items->item->product_name,
+            'quantity' => (int)$item->items->item->quantity,
+            'city' => (string)$item->shipping_info->city
+        ];
+    }
+
+    return $transactions;
+}
+
+function parseProductData($file = 'product.xml') {
+    $xml = simplexml_load_file($file) or die('Failed to load product.xml');
+    $products = [];
+
+    foreach ($xml->products->product as $item) {
+        $products[] = [
+            'id' => (int)$item->id,
+            'name' => (string)$item->name,
+            'category' => (string)$item->category,
+            'price' => (float)$item->price,
+            'stock' => (int)$item->stock,
+            'rating' => (float)$item->rating,
+            'review_count' => (int)$item->review_count,
+            'featured' => filter_var($item->featured, FILTER_VALIDATE_BOOLEAN),
+            'on_sale' => filter_var($item->on_sale, FILTER_VALIDATE_BOOLEAN)
+        ];
+    }
+
+    return $products;
+}
+
+// Parse XML data
+$transactions = parseTransactionData();
+$products = parseProductData();
+
+// Dashboard Stats
+$totalRevenue = array_sum(array_column($transactions, 'total_amount'));
+$totalOrders = count($transactions);
+$totalProducts = count($products);
+
+// Database connection required here
+// Example: $conn = new mysqli('localhost', 'username', 'password', 'database');
+
+// User count (sample query — adjust as needed)
+$user_count_query = "SELECT COUNT(*) as total_users FROM users WHERE is_active = 1";
+$user_result = $conn->query($user_count_query);
+$totalUsers = $user_result ? $user_result->fetch_assoc()['total_users'] : 0;
+
+// Chart Data
+$statusCounts = array_count_values(array_column($transactions, 'status'));
+$paymentMethods = array_count_values(array_column($transactions, 'payment_method'));
+$cityCounts = array_count_values(array_column($transactions, 'city'));
+
+// Optional: Close statement if one was used earlier
+// $stmt->close(); ← Only if using prepared statements
+
 ?>
 
 <!DOCTYPE html>
@@ -81,6 +143,7 @@ $stmt->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HirayaFit - Admin Dashboard</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         :root {
             --primary: #111111;
@@ -91,6 +154,9 @@ $stmt->close();
             --grey: #767676;
             --sidebar-width: 250px;
             --danger: #dc3545;
+            --success: #28a745;
+            --warning: #ffc107;
+            --info: #17a2b8;
         }
         
         * {
@@ -412,11 +478,291 @@ $stmt->close();
         .dashboard-container {
             padding: 30px;
         }
+
+        /* Dashboard Styles */
+        .dashboard-header {
+            margin-bottom: 30px;
+        }
+
+        .dashboard-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 8px;
+        }
+
+        .dashboard-subtitle {
+            color: var(--grey);
+            font-size: 16px;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border-left: 4px solid var(--secondary);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        }
+
+        .stat-card .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .stat-card.revenue .stat-icon { background: linear-gradient(135deg, var(--success), #20c997); }
+        .stat-card.orders .stat-icon { background: linear-gradient(135deg, var(--secondary), #0056b3); }
+        .stat-card.products .stat-icon { background: linear-gradient(135deg, var(--warning), #e0a800); }
+        .stat-card.users .stat-icon { background: linear-gradient(135deg, var(--info), #138496); }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--grey);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-change {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .stat-change.positive {
+            background: rgba(40, 167, 69, 0.1);
+            color: var(--success);
+        }
+
+        .stat-change.negative {
+            background: rgba(220, 53, 69, 0.1);
+            color: var(--danger);
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .chart-subtitle {
+            font-size: 12px;
+            color: var(--grey);
+            margin-top: 4px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+
+        .quick-actions-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 20px;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .action-btn:hover {
+            background: var(--secondary);
+            transform: translateY(-1px);
+        }
+
+        .action-btn i {
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        /* Recent Activity */
+        .recent-activity {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        .activity-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 20px;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 16px;
+            color: white;
+        }
+
+        .activity-icon.order { background: var(--secondary); }
+        .activity-icon.payment { background: var(--success); }
+        .activity-icon.user { background: var(--info); }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-text {
+            font-size: 14px;
+            color: var(--dark);
+            margin-bottom: 2px;
+        }
+
+        .activity-time {
+            font-size: 12px;
+            color: var(--grey);
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--dark);
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--dark) transparent transparent transparent;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
         
         /* Responsive Design */
         @media (max-width: 992px) {
             .welcome-text {
                 display: none;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
             }
         }
         
@@ -445,6 +791,18 @@ $stmt->close();
             
             .navbar-title {
                 display: none;
+            }
+
+            .dashboard-container {
+                padding: 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .actions-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -531,9 +889,182 @@ $stmt->close();
 
         <!-- Dashboard Content -->
         <div class="dashboard-container">
-            <!-- Dashboard content would go here -->
-            <h1>Welcome to HirayaFit Admin Dashboard</h1>
-            <p>This is where you can manage your fitness business operations.</p>
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <h1 class="dashboard-title">Dashboard Overview</h1>
+                <p class="dashboard-subtitle">Welcome back! Here's what's happening with your store today.</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card revenue tooltip">
+                    <div class="stat-icon"><i class="fas fa-peso-sign"></i></div>
+                    <div class="stat-value">₱<?php echo number_format($totalRevenue); ?></div>
+                    <div class="stat-label">Total Revenue</div>
+                    <div class="stat-change positive">+12.5%</div>
+                    <span class="tooltiptext">Total revenue from all completed transactions</span>
+                </div>
+
+                <div class="stat-card orders tooltip">
+                    <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                    <div class="stat-value"><?php echo $totalOrders; ?></div>
+                    <div class="stat-label">Total Orders</div>
+                    <div class="stat-change positive">+8.2%</div>
+                    <span class="tooltiptext">Total number of orders placed</span>
+                </div>
+
+                <div class="stat-card products tooltip">
+                    <div class="stat-icon"><i class="fas fa-tshirt"></i></div>
+                    <div class="stat-value"><?php echo $totalProducts; ?></div>
+                    <div class="stat-label">Products</div>
+                    <div class="stat-change positive">+2</div>
+                    <span class="tooltiptext">Total active products in inventory</span>
+                </div>
+
+                <div class="stat-card users tooltip">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-value"><?php echo $totalUsers; ?></div>
+                    <div class="stat-label">Active Users</div>
+                    <div class="stat-change positive">+15.3%</div>
+                    <span class="tooltiptext">Total registered and active users</span>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <!-- Order Status Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div>
+                            <h3 class="chart-title">Order Status Distribution</h3>
+                            <p class="chart-subtitle">Current status of all orders</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="orderStatusChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Payment Methods Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div>
+                            <h3 class="chart-title">Payment Methods</h3>
+                            <p class="chart-subtitle">Popular payment options</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="paymentMethodsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Sales by Location Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div>
+                            <h3 class="chart-title">Sales by Location</h3>
+                            <p class="chart-subtitle">Orders distribution by city</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="salesLocationChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Revenue Trend Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div>
+                            <h3 class="chart-title">Revenue Trend</h3>
+                            <p class="chart-subtitle">Daily revenue for the past week</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="revenueTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h3 class="quick-actions-title">Quick Actions</h3>
+                <div class="actions-grid">
+                    <a href="products.php" class="action-btn tooltip">
+                        <i class="fas fa-plus"></i>
+                        Add New Product
+                        <span class="tooltiptext">Add a new product to your inventory</span>
+                    </a>
+                    <a href="orders_admin.php" class="action-btn tooltip">
+                        <i class="fas fa-eye"></i>
+                        View All Orders
+                        <span class="tooltiptext">Manage and track all customer orders</span>
+                    </a>
+                    <a href="stock.php" class="action-btn tooltip">
+                        <i class="fas fa-boxes"></i>
+                        Manage Inventory
+                        <span class="tooltiptext">Update stock levels and inventory</span>
+                    </a>
+                    <a href="reports.php" class="action-btn tooltip">
+                        <i class="fas fa-chart-bar"></i>
+                        Generate Report
+                        <span class="tooltiptext">Create detailed business reports</span>
+                    </a>
+                    <a href="users.php" class="action-btn tooltip">
+                        <i class="fas fa-user-plus"></i>
+                        Manage Users
+                        <span class="tooltiptext">View and manage customer accounts</span>
+                    </a>
+                    <a href="settings.php" class="action-btn tooltip">
+                        <i class="fas fa-cog"></i>
+                        System Settings
+                        <span class="tooltiptext">Configure system preferences</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-activity">
+                <h3 class="activity-title">Recent Activity</h3>
+                
+                <?php foreach($transactions as $transaction): ?>
+                <div class="activity-item">
+                    <div class="activity-icon <?php echo $transaction['status'] === 'delivered' ? 'payment' : 'order'; ?>">
+                        <i class="fas <?php echo $transaction['status'] === 'delivered' ? 'fa-check' : 'fa-truck'; ?>"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">
+                            Order #<?php echo substr($transaction['transaction_id'], -6); ?> 
+                            (<?php echo $transaction['product_name']; ?>) - 
+                            <strong>₱<?php echo number_format($transaction['total_amount']); ?></strong>
+                        </div>
+                        <div class="activity-time">
+                            <?php echo date('M j, Y g:i A', strtotime($transaction['transaction_date'])); ?> • 
+                            <?php echo ucfirst($transaction['status']); ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+
+                <div class="activity-item">
+                    <div class="activity-icon user">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">New user registered</div>
+                        <div class="activity-time">2 hours ago</div>
+                    </div>
+                </div>
+
+                <div class="activity-item">
+                    <div class="activity-icon order">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">New product added to inventory</div>
+                        <div class="activity-time">5 hours ago</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -566,6 +1097,209 @@ $stmt->close();
         
         sidebarClose.addEventListener('click', function() {
             sidebar.classList.remove('active');
+        });
+
+        // Chart colors matching the theme
+        const colors = {
+            primary: '#111111',
+            secondary: '#0071c5',
+            success: '#28a745',
+            warning: '#ffc107',
+            info: '#17a2b8',
+            danger: '#dc3545'
+        };
+
+        // Order Status Chart
+        const orderStatusCtx = document.getElementById('orderStatusChart').getContext('2d');
+        const orderStatusData = <?php echo json_encode($statusCounts); ?>;
+        
+        new Chart(orderStatusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(orderStatusData).map(status => status.charAt(0).toUpperCase() + status.slice(1)),
+                datasets: [{
+                    data: Object.values(orderStatusData),
+                    backgroundColor: [colors.success, colors.warning, colors.info, colors.secondary],
+                    borderWidth: 3,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Payment Methods Chart
+        const paymentMethodsCtx = document.getElementById('paymentMethodsChart').getContext('2d');
+        const paymentMethodsData = <?php echo json_encode($paymentMethods); ?>;
+        
+        new Chart(paymentMethodsCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(paymentMethodsData).map(method => method.toUpperCase()),
+                datasets: [{
+                    label: 'Orders',
+                    data: Object.values(paymentMethodsData),
+                    backgroundColor: [colors.secondary, colors.success],
+                    borderColor: [colors.secondary, colors.success],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+
+        // Sales by Location Chart
+        const salesLocationCtx = document.getElementById('salesLocationChart').getContext('2d');
+        const cityData = <?php echo json_encode($cityCounts); ?>;
+        
+        new Chart(salesLocationCtx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(cityData).map(city => city.charAt(0).toUpperCase() + city.slice(1)),
+                datasets: [{
+                    data: Object.values(cityData),
+                    backgroundColor: [colors.info, colors.warning, colors.danger, colors.success],
+                    borderWidth: 3,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+
+        // Revenue Trend Chart
+        const revenueTrendCtx = document.getElementById('revenueTrendChart').getContext('2d');
+        
+        // Sample data for the past week (you would get this from your database)
+        const revenueData = [800, 1200, 900, 1500, 1100, 1800, 2200];
+        const labels = [];
+        
+        // Generate last 7 days
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            labels.push(date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+        }
+        
+        new Chart(revenueTrendCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Revenue (₱)',
+                    data: revenueData,
+                    borderColor: colors.secondary,
+                    backgroundColor: colors.secondary + '20',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: colors.secondary,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₱' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+
+        // Animate stat cards on page load
+        const statCards = document.querySelectorAll('.stat-card');
+        statCards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100);
+            }, index * 100);
+        });
+
+        // Add click handlers for stat cards (for drill-down functionality)
+        document.querySelector('.stat-card.revenue').addEventListener('click', function() {
+            window.location.href = 'payment-history.php';
+        });
+
+        document.querySelector('.stat-card.orders').addEventListener('click', function() {
+            window.location.href = 'orders_admin.php';
+        });
+
+        document.querySelector('.stat-card.products').addEventListener('click', function() {
+            window.location.href = 'products.php';
+        });
+
+        document.querySelector('.stat-card.users').addEventListener('click', function() {
+            window.location.href = 'users.php';
         });
     });
     </script>

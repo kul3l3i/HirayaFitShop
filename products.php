@@ -1158,7 +1158,7 @@ form:not(.search-form) button:hover {
         <div class="sidebar-menu">
             <div class="menu-title">MAIN</div>
             <a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-            <a href="orders.php"><i class="fas fa-shopping-cart"></i> Orders</a>
+            <a href="orders_admin.php"><i class="fas fa-shopping-cart"></i> Orders</a>
             <a href="payment-history.php"><i class="fas fa-money-check-alt"></i> Payment History</a>
             
             <div class="menu-title">INVENTORY</div>
