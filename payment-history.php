@@ -977,7 +977,7 @@ $stmt->close();
                             <input type="text" name="search" class="filter-input" placeholder="Transaction ID or customer name" value="<?php echo htmlspecialchars($searchTerm); ?>">
                         </div>
                         
-                        <div class="filter-group">
+                        <!--<div class="filter-group">
                             <label class="filter-label">Status</label>
                             <select name="status" class="filter-input">
                                 <option value="">All Statuses</option>
@@ -986,7 +986,7 @@ $stmt->close();
                                 <option value="delivered" <?php echo $filterStatus === 'delivered' ? 'selected' : ''; ?>>Delivered</option>
                                 <option value="cancelled" <?php echo $filterStatus === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                             </select>
-                        </div>
+                        </div>-->
                         
                         <div class="filter-group">
                             <label class="filter-label">Payment Method</label>

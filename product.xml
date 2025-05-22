@@ -23,7 +23,7 @@
             <currency>PHP</currency>
             <description>Breathable, sweat-wicking compression shirt for workouts</description>
             <image>images/mens_compression_shirt.jpg</image>
-            <stock>45</stock>
+            <stock>50</stock>
             <sizes>
                 <size>S</size>
                 <size>M</size>
@@ -99,7 +99,7 @@
             <currency>PHP</currency>
             <description>Lightweight shorts with built-in liner and pockets</description>
             <image>images/mens_training_shorts.jpg</image>
-            <stock>38</stock>
+            <stock>37</stock>
             <sizes>
                 <size>S</size>
                 <size>M</size>
@@ -149,7 +149,7 @@
             <currency>PHP</currency>
             <description>Seamless, squat-proof leggings with high waistband</description>
             <image>images/womens_leggings.jpg</image>
-            <stock>42</stock>
+            <stock>41</stock>
             <sizes>
                 <size>XS</size>
                 <size>S</size>
@@ -709,7 +709,7 @@
             <currency>PHP</currency>
             <description>Textured foam roller for muscle massage</description>
             <image>images/foam_roller.jpg</image>
-            <stock>20</stock>
+            <stock>19</stock>
             <sizes>
                 <size>Standard</size>
             </sizes>
@@ -731,7 +731,7 @@
             <currency>PHP</currency>
             <description>Adjustable wrist wraps for weightlifting support</description>
             <image>images/wrist_wraps.jpg</image>
-            <stock>40</stock>
+            <stock>39</stock>
             <sizes>
                 <size>One Size</size>
             </sizes>
@@ -746,4 +746,4 @@
             <on_sale>true</on_sale>
         </product>
     </products>
-</store>
+<stock_history><entry><product_id>2001</product_id><product_name>Men's Compression Shirt</product_name><old_stock>45</old_stock><new_stock>50</new_stock><change>5</change><reason>New Stock Received</reason><admin_id>1</admin_id><admin_name>HirayaFit Admin</admin_name><date>2025-05-22 08:37:26</date></entry></stock_history></store>
