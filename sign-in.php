@@ -2,6 +2,8 @@
 // Start session
 
 
+
+
 session_start();
 include 'db_connect.php';
 // Initialize variables
@@ -749,7 +751,7 @@ if (isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])) {
     
     <!-- Simplified Navigation -->
     <nav class="main-nav" id="mainNav">
-        <a href="in.php" class="active">HOME</a>  
+        <a href="index.php" class="active">HOME</a>  
         <a href="about.php">ABOUT</a>
         <a href="contact.php">CONTACT</a>
     </nav>
