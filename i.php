@@ -3564,111 +3564,84 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!--linking category -->
 <script>
-    // Modified script to fix gender filter links
+    // This script directly targets the category links and adds event listeners
+// Add this script at the bottom of your page, right before the closing body tag
 
 document.addEventListener('DOMContentLoaded', function() {
-    loadProductData();
-    updateCartCount();
+    console.log("Document loaded, initializing category links...");
     
-    // Fix the maap to map typo in the quick view function
-    fixQuickViewModal();
-    
-    // Add event listener for search button
-    document.querySelector('.search-bar button').addEventListener('click', searchProducts);
-    
-    // Add event listener for Enter key in search input
-    document.getElementById('searchInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            searchProducts();
-        }
-    });
-    
-    // Load featured products after a slight delay to ensure XML is loaded
-    setTimeout(loadFeaturedProducts, 500);
-    
-    // Generate category navigation after the products have loaded
-    setTimeout(generateCategoryNav, 700);
-    
-    // Initialize all filter links
-    setTimeout(initializeFilters, 800);
+    // Wait a bit to ensure all elements are loaded
+    setTimeout(function() {
+        // Direct targeting of the EXPLORE buttons in featured categories
+        const exploreButtons = document.querySelectorAll('.category-overlay .category-btn');
+        console.log("Found EXPLORE buttons:", exploreButtons.length);
+        
+        exploreButtons.forEach(button => {
+            // Remove any existing click handlers
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+            
+            // Add new click handler
+            newButton.addEventListener('click', function(event) {
+                event.preventDefault();
+                
+                const href = this.getAttribute('href');
+                console.log("EXPLORE button clicked with href:", href);
+                
+                let category;
+                switch(href) {
+                    case 'men.php':
+                        category = "Men's Activewear";
+                        break;
+                    case 'women.php':
+                        category = "Women's Activewear";
+                        break;
+                    case 'foot.php':
+                        category = "Footwear";
+                        break;
+                    case 'acces.php':
+                        category = "Accessories";
+                        break;
+                    default:
+                        // Try to get category from nearest h3
+                        const h3 = this.closest('.category-overlay').querySelector('h3');
+                        if (h3) {
+                            const text = h3.textContent;
+                            if (text.includes("Men")) {
+                                category = "Men's Activewear";
+                            } else if (text.includes("Women")) {
+                                category = "Women's Activewear";
+                            } else if (text.includes("Foot")) {
+                                category = "Footwear";
+                            } else if (text.includes("Access")) {
+                                category = "Accessories";
+                            } else {
+                                category = text;
+                            }
+                        } else {
+                            category = "All Products";
+                        }
+                }
+                
+                console.log("Filtering by category:", category);
+                
+                // Call your filter function
+                if (typeof filterProductsByCategory === 'function') {
+                    filterProductsByCategory(category);
+                } else {
+                    console.error("filterProductsByCategory function is not defined!");
+                }
+            });
+            
+            console.log("Added direct click handler to button:", newButton.textContent, "with href:", newButton.getAttribute('href'));
+        });
+        
+        console.log("Category links initialization complete");
+    }, 1000);
 });
 
-// Function to handle category link clicks
-function handleCategoryLinkClick(event) {
-    event.preventDefault();
-    
-    // Get the href attribute to determine which category to filter
-    const href = event.target.getAttribute('href');
-    let filterCategory;
-    
-    // Check if this is a featured collection link
-    const isFeaturedCollection = event.target.closest('.featured-collections') !== null;
-    
-    console.log("Link clicked:", href, "Is featured collection:", isFeaturedCollection);
-    
-    // Map href values to exact category names that match your product data
-    switch (href) {
-        case 'men.php':
-            filterCategory = "Men's Activewear";
-            break;
-        case 'women.php':
-            filterCategory = "Women's Activewear";
-            break;
-        case 'foot.php':
-            filterCategory = "Footwear";
-            break;
-        case 'acces.php':
-            filterCategory = "Accessories";
-            break;
-        default:
-            // Fallback to the heading text if href doesn't match
-            const categoryCard = event.target.closest('.category-card');
-            if (categoryCard) {
-                let categoryName = categoryCard.querySelector('h3').textContent;
-                filterCategory = categoryName;
-            } else {
-                // If we can't find a category card, use a default category
-                filterCategory = "All Products";
-            }
-    }
-    
-    console.log("Filtering by category:", filterCategory);
-    
-    // Filter products by the selected category
-    filterProductsByCategory(filterCategory);
-}
-
-// Function to initialize the page
-function initializeFilters() {
-    // Get all category buttons from the featured categories section
-    const categoryButtons = document.querySelectorAll('.category-btn');
-    
-    // Add click event listener to each button
-    categoryButtons.forEach(button => {
-        button.addEventListener('click', handleCategoryLinkClick);
-    });
-    
-    // Get all buttons from the featured collections section
-    const collectionButtons = document.querySelectorAll('.featured-collections .btn');
-    
-    // Add click event listener to each collection button
-    collectionButtons.forEach(button => {
-        button.addEventListener('click', function(event) {
-            console.log("Featured collection button clicked:", this.textContent);
-            handleCategoryLinkClick(event);
-        });
-    });
-    
-    // Add event listeners to gender buttons in the gender-buttons div
-    const genderButtons = document.querySelectorAll('.gender-buttons .gender-btn');
-    genderButtons.forEach(button => {
-        button.addEventListener('click', handleCategoryLinkClick);
-        console.log("Added event listener to gender button:", button.getAttribute('href'));
-    });
-    
-    console.log("All filter links initialized successfully");
-}
 </script>
+
 
 
 
