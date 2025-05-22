@@ -12,7 +12,7 @@ $otp_purpose = $_SESSION['otp_purpose'];
 $verification_message = "";
 $is_verified = false;
 
-$conn = mysqli_connect("localhost", "root", "", "hirayafitdb", 3306);
+$conn = mysqli_connect("localhost", "root", "", "u801377270_hiraya_2025", 3306);
 
 if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());

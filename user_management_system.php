@@ -14,8 +14,8 @@ if (session_status() === PHP_SESSION_NONE) {
 // Database connection
 function getDbConnection() {
     $host = 'localhost';
-    $dbname = 'hirayafitdb'; // Update with your actual database name
-    $username = 'root'; // Update with your database username
+    $dbname = 'u801377270_hiraya_2025'; // Update with your actual database name
+    $username = 'u801377270_hiraya_2025'; // Update with your database username
     $password = ''; // Update with your database password
 
     try {

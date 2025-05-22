@@ -1,17 +1,15 @@
 <?php
 // Start session
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+
 
 
 session_start();
 
 // Database connection
 $db_host = 'localhost';
-$db_user = 'root'; // Change to your database username
-$db_pass = ''; // Change to your database password
-$db_name = 'hirayafitdb'; // Change to your database name
+$db_user = 'u801377270_hiraya_2025'; // Change to your database username
+$db_pass = 'Hiraya_2025'; // Change to your database password
+$db_name = 'u801377270_hiraya_2025'; // Change to your database name
 
 $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
 

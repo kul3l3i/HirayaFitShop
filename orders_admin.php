@@ -4,9 +4,9 @@ session_start();
 
 // Database connection configuration
 $db_host = 'localhost';
-$db_user = 'root'; // Change to your DB username
-$db_pass = '';     // Change to your DB password
-$db_name = 'hirayafitdb'; // Change to your DB name
+$db_user = 'u801377270_hiraya_2025'; // Change to your DB username
+$db_pass = 'Hiraya_2025';     // Change to your DB password
+$db_name = 'u801377270_hiraya_2025'; // Change to your DB name
 
 // Create database connection
 $conn = new mysqli($db_host, $db_user, $db_pass, $db_name, 3306);
