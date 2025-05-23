@@ -281,7 +281,7 @@ if (isset($_POST['place_order'])) {
 
         <!-- Main Navigation -->
         <nav class="main-nav" id="mainNav">
-            <a href="userusershop.php">HOME</a>
+            <a   href="usershop.php">HOME</a>
         </nav>
     </header>
 

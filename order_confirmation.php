@@ -124,7 +124,7 @@ $transaction = loadTransactionDetails($transactionId);
 
 if (!$transaction) {
     // Transaction not found, redirect to home
-    header("Location: userusershop.php");
+    header("Location: userusershop.php.php");
     exit();
 }
 
@@ -231,7 +231,7 @@ $deliveryMax = date('F d, Y', strtotime('+7 weekday'));
 
         <!-- Main Navigation -->
         <nav class="main-nav" id="mainNav">
-            <a href="userusershop.php">HOME</a>
+            <a   href="usershop.php">HOME</a>
         </nav>
     </header>
 
@@ -410,7 +410,7 @@ $deliveryMax = date('F d, Y', strtotime('+7 weekday'));
 
                     <div class="action-buttons">
                         <a href="orders.php" class="btn-primary"><i class="fas fa-box"></i> View My Orders</a>
-                        <a href="userusershop.php" class="btn-secondary"><i class="fas fa-shopping-bag"></i> Continue Shopping</a>
+                        <a   href="usershop.php" class="btn-secondary"><i class="fas fa-shopping-bag"></i> Continue Shopping</a>
                     </div>
                 </div>
             </div>

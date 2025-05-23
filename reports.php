@@ -1,77 +1,12 @@
-<?php
-
-
-session_start();
-include 'db_connect.php';
-// Initialize variables
-$error = '';
-$username_email = '';
-
-// Check if the user is logged in
-if (!isset($_SESSION['admin_id'])) {
-    // Redirect to login page if not logged in
-    header("Location: sign-in.php");
-    exit;
-}
-
-// Get admin information from the database
-$admin_id = $_SESSION['admin_id'];
-$stmt = $conn->prepare("SELECT admin_id, username, fullname, email, profile_image, role FROM admins WHERE admin_id = ? AND is_active = TRUE");
-$stmt->bind_param("i", $admin_id);
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows === 0) {
-    // Admin not found or not active, destroy session and redirect to login
-    session_destroy();
-    header("Location: sign-in.php");
-    exit;
-}
-
-// Get admin details
-$admin = $result->fetch_assoc();
-
-// Set default role if not present
-if (!isset($admin['role'])) {
-    $admin['role'] = 'Administrator';
-}
-
-// Update last login time
-$update_stmt = $conn->prepare("UPDATE admins SET last_login = CURRENT_TIMESTAMP WHERE admin_id = ?");
-$update_stmt->bind_param("i", $admin_id);
-$update_stmt->execute();
-$update_stmt->close();
-
-// Handle logout
-if (isset($_GET['logout'])) {
-    session_destroy();
-    header("Location: sign-in.php");
-    exit;
-}
-
-// Function to get profile image URL
-function getProfileImageUrl($profileImage) {
-    if (!empty($profileImage) && file_exists("uploads/profiles/" . $profileImage)) {
-        return "uploads/profiles/" . $profileImage;
-    } else {
-        return "assets/images/default-avatar.png"; // Default image path
-    }
-}
-
-// Get profile image URL
-$profileImageUrl = getProfileImageUrl($admin['profile_image']);
-
-// Close the statement
-$stmt->close();
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HirayaFit - Admin Dashboard</title>
+    <title>HirayaFit - Reports & Analytics</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
             --primary: #111111;
@@ -82,6 +17,9 @@ $stmt->close();
             --grey: #767676;
             --sidebar-width: 250px;
             --danger: #dc3545;
+            --success: #28a745;
+            --warning: #ffc107;
+            --info: #17a2b8;
         }
         
         * {
@@ -403,11 +341,327 @@ $stmt->close();
         .dashboard-container {
             padding: 30px;
         }
-        
+
+        /* Reports Page Specific Styles */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .export-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #005a9c;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #218838;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--dark);
+            border: 1px solid #ddd;
+        }
+
+        .btn-outline:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Filter Section */
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .filter-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--dark);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: var(--dark);
+        }
+
+        .form-control {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--secondary);
+        }
+
+        .stat-card.success::before {
+            background: var(--success);
+        }
+
+        .stat-card.warning::before {
+            background: var(--warning);
+        }
+
+        .stat-card.info::before {
+            background: var(--info);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .stat-title {
+            font-size: 14px;
+            color: var(--grey);
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+        }
+
+        .stat-icon.primary {
+            background: var(--secondary);
+        }
+
+        .stat-icon.success {
+            background: var(--success);
+        }
+
+        .stat-icon.warning {
+            background: var(--warning);
+        }
+
+        .stat-icon.info {
+            background: var(--info);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+
+        .stat-change {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stat-change.positive {
+            color: var(--success);
+        }
+
+        .stat-change.negative {
+            color: var(--danger);
+        }
+
+        /* Charts Section */
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Tables */
+        .table-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .table-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 14px;
+        }
+
+        .data-table td {
+            font-size: 14px;
+            color: var(--grey);
+        }
+
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-delivered {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-cancelled {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
         /* Responsive Design */
         @media (max-width: 992px) {
             .welcome-text {
                 display: none;
+            }
+            
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts-section {
+                grid-template-columns: 1fr;
             }
         }
         
@@ -437,6 +691,26 @@ $stmt->close();
             .navbar-title {
                 display: none;
             }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .export-controls {
+                width: 100%;
+                justify-content: stretch;
+            }
+            
+            .export-controls .btn {
+                flex: 1;
+                justify-content: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -462,7 +736,7 @@ $stmt->close();
             <a href="users.php"><i class="fas fa-users"></i> User Management</a>
             
             <div class="menu-title">REPORTS & SETTINGS</div>
-            <a href="reports.php"  class="active"><i class="fas fa-file-pdf"></i> Reports & Analytics</a>
+            <a href="reports.php" class="active"><i class="fas fa-file-pdf"></i> Reports & Analytics</a>
             <a href="settings.php"><i class="fas fa-cog"></i> System Settings</a>
         </div>
     </aside>
@@ -473,8 +747,8 @@ $stmt->close();
         <nav class="top-navbar">
             <div class="nav-left">
                 <button class="toggle-sidebar" id="toggleSidebar"><i class="fas fa-bars"></i></button>
-                <span class="navbar-title">Dashboard</span>
-                <div class="welcome-text">Welcome, <strong><?php echo htmlspecialchars($admin['fullname']); ?></strong>!</div>
+                <span class="navbar-title">Reports & Analytics</span>
+                <div class="welcome-text">Comprehensive business insights</div>
             </div>
             
             <div class="navbar-actions">
@@ -490,27 +764,27 @@ $stmt->close();
                 <div class="admin-dropdown" id="adminDropdown">
                     <div class="admin-profile">
                         <div class="admin-avatar-container">
-                            <img src="<?php echo htmlspecialchars($profileImageUrl); ?>" alt="Admin" class="admin-avatar">
+                            <img src="https://via.placeholder.com/40x40/0071c5/ffffff?text=A" alt="Admin" class="admin-avatar">
                         </div>
                         <div class="admin-info">
-                            <span class="admin-name"><?php echo htmlspecialchars($admin['fullname']); ?></span>
-                            <span class="admin-role"><?php echo htmlspecialchars($admin['role']); ?></span>
+                            <span class="admin-name">Admin User</span>
+                            <span class="admin-role">Administrator</span>
                         </div>
                     </div>
                     
                     <div class="admin-dropdown-content" id="adminDropdownContent">
                         <div class="admin-dropdown-header">
                             <div class="admin-dropdown-avatar-container">
-                                <img src="<?php echo htmlspecialchars($profileImageUrl); ?>" alt="Admin" class="admin-dropdown-avatar">
+                                <img src="https://via.placeholder.com/50x50/0071c5/ffffff?text=A" alt="Admin" class="admin-dropdown-avatar">
                             </div>
                             <div class="admin-dropdown-info">
-                                <span class="admin-dropdown-name"><?php echo htmlspecialchars($admin['fullname']); ?></span>
-                                <span class="admin-dropdown-role"><?php echo htmlspecialchars($admin['role']); ?></span>
+                                <span class="admin-dropdown-name">Admin User</span>
+                                <span class="admin-dropdown-role">Administrator</span>
                             </div>
                         </div>
                         <div class="admin-dropdown-user">
-                            <h4 class="admin-dropdown-user-name"><?php echo htmlspecialchars($admin['fullname']); ?></h4>
-                            <p class="admin-dropdown-user-email"><?php echo htmlspecialchars($admin['email']); ?></p>
+                            <h4 class="admin-dropdown-user-name">Admin User</h4>
+                            <p class="admin-dropdown-user-email">admin@hirafit.com</p>
                         </div>
                         <a href="profile.php"><i class="fas fa-user"></i> Profile Settings</a>
                         <a href="change-password.php"><i class="fas fa-lock"></i> Change Password</a>
@@ -522,41 +796,631 @@ $stmt->close();
 
         <!-- Dashboard Content -->
         <div class="dashboard-container">
-          
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1 class="page-title">Reports & Analytics</h1>
+                <div class="export-controls">
+                    <button class="btn btn-success" onclick="exportToPDF()">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </button>
+                    <button class="btn btn-outline" onclick="exportToCSV()">
+                        <i class="fas fa-file-csv"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <h3 class="filter-title">Filter Reports</h3>
+                <div class="filter-grid">
+                    <div class="form-group">
+                        <label class="form-label">Date Range</label>
+                        <select class="form-control" id="dateRange">
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month" selected>This Month</option>
+                            <option value="quarter">This Quarter</option>
+                            <option value="year">This Year</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select class="form-control" id="statusFilter">
+                            <option value="all">All Status</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="pending">Pending</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Payment Method</label>
+                        <select class="form-control" id="paymentFilter">
+                            <option value="all">All Methods</option>
+                            <option value="gcash">GCash</option>
+                            <option value="cod">Cash on Delivery</option>
+                            <option value="card">Credit/Debit Card</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-primary" onclick="applyFilters()">
+                            <i class="fas fa-filter"></i> Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Total Revenue</span>
+                        <div class="stat-icon primary">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">₱124,500</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> +12.5% from last month
+                    </div>
+                </div>
+
+                <div class="stat-card success">
+                    <div class="stat-header">
+                        <span class="stat-title">Total Orders</span>
+                        <div class="stat-icon success">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">1,247</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> +8.3% from last month
+                    </div>
+                </div>
+
+                <div class="stat-card warning">
+                    <div class="stat-header">
+                        <span class="stat-title">Average Order Value</span>
+                        <div class="stat-icon warning">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">₱1,598</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> +5.2% from last month
+                    </div>
+                </div>
+
+                <div class="stat-card info">
+                    <div class="stat-header">
+                        <span class="stat-title">Unique Customers</span>
+                        <div class="stat-icon info">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">892</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> +15.7% from last month
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-section">
+                <div class="chart-card">
+                    <h3 class="chart-title">Revenue Trend</h3>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3 class="chart-title">Order Status Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3 class="chart-title">Payment Methods</h3>
+                    <div class="chart-container">
+                        <canvas id="paymentChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3 class="chart-title">Top Products</h3>
+                    <div class="chart-container">
+                        <canvas id="productsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Transactions Table -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h3 class="table-title">Recent Transactions</h3>
+                    <button class="btn btn-outline" onclick="viewAllTransactions()">
+                        <i class="fas fa-eye"></i> View All
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="transactionsTable">
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Payment Method</th>
+                                <th>Amount</th>
+                                <th>Items</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionsTableBody">
+                            <!-- Sample data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Top Customers Table -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h3 class="table-title">Top Customers</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Email</th>
+                                <th>Total Orders</th>
+                                <th>Total Spent</th>
+                                <th>Last Order</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Lai Rodriguez</td>
+                                <td>rodriguez.elx@gmail.com</td>
+                                <td>15</td>
+                                <td>₱24,750</td>
+                                <td>2025-05-23</td>
+                            </tr>
+                            <tr>
+                                <td>Maria Santos</td>
+                                <td>maria.santos@email.com</td>
+                                <td>12</td>
+                                <td>₱18,900</td>
+                                <td>2025-05-22</td>
+                            </tr>
+                            <tr>
+                                <td>John Cruz</td>
+                                <td>john.cruz@email.com</td>
+                                <td>8</td>
+                                <td>₱12,400</td>
+                                <td>2025-05-21</td>
+                            </tr>
+                            <tr>
+                                <td>Ana Reyes</td>
+                                <td>ana.reyes@email.com</td>
+                                <td>10</td>
+                                <td>₱16,200</td>
+                                <td>2025-05-20</td>
+                            </tr>
+                            <tr>
+                                <td>Carlos Garcia</td>
+                                <td>carlos.garcia@email.com</td>
+                                <td>6</td>
+                                <td>₱9,300</td>
+                                <td>2025-05-19</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Admin dropdown toggle
-        const adminDropdown = document.getElementById('adminDropdown');
-        const adminDropdownContent = document.getElementById('adminDropdownContent');
-        
-        adminDropdown.addEventListener('click', function(e) {
-            e.stopPropagation();
-            adminDropdown.classList.toggle('show');
-        });
-        
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!adminDropdown.contains(e.target)) {
-                adminDropdown.classList.remove('show');
+        // Sample transaction data based on your XML structure
+        const sampleTransactions = [
+            {
+                transaction_id: 'TRX-683014A91A92D',
+                user_id: 2,
+                customer_name: 'Lai Rodriguez',
+                customer_email: 'rodriguez.elx@gmail.com',
+                transaction_date: '2025-05-23 08:24:41',
+                status: 'delivered',
+                payment_method: 'gcash',
+                subtotal: 1500,
+                shipping_fee: 100,
+                total_amount: 1600,
+                items: [
+                    {
+                        product_name: "Women's High-Waist Leggings",
+                        price: 1500,
+                        quantity: 1,
+                        color: 'black',
+                        size: 'S'
+                    }
+                ]
+            },
+            {
+                transaction_id: 'TRX-683014A91A93E',
+                user_id: 3,
+                customer_name: 'Maria Santos',
+                customer_email: 'maria.santos@email.com',
+                transaction_date: '2025-05-22 14:30:15',
+                status: 'pending',
+                payment_method: 'cod',
+                subtotal: 2400,
+                shipping_fee: 100,
+                total_amount: 2500,
+                items: [
+                    {
+                        product_name: "Men's Athletic Shorts",
+                        price: 1200,
+                        quantity: 2,
+                        color: 'blue',
+                        size: 'M'
+                    }
+                ]
+            },
+            {
+                transaction_id: 'TRX-683014A91A94F',
+                user_id: 4,
+                customer_name: 'John Cruz',
+                customer_email: 'john.cruz@email.com',
+                transaction_date: '2025-05-21 09:15:30',
+                status: 'delivered',
+                payment_method: 'gcash',
+                subtotal: 1800,
+                shipping_fee: 100,
+                total_amount: 1900,
+                items: [
+                    {
+                        product_name: "Sports Bra",
+                        price: 900,
+                        quantity: 2,
+                        color: 'pink',
+                        size: 'L'
+                    }
+                ]
+            },
+            {
+                transaction_id: 'TRX-683014A91A95G',
+                user_id: 5,
+                customer_name: 'Ana Reyes',
+                customer_email: 'ana.reyes@email.com',
+                transaction_date: '2025-05-20 16:45:22',
+                status: 'cancelled',
+                payment_method: 'card',
+                subtotal: 3000,
+                shipping_fee: 100,
+                total_amount: 3100,
+                items: [
+                    {
+                        product_name: "Yoga Mat",
+                        price: 1500,
+                        quantity: 2,
+                        color: 'purple',
+                        size: 'Standard'
+                    }
+                ]
+            },
+            {
+                transaction_id: 'TRX-683014A91A96H',
+                user_id: 6,
+                customer_name: 'Carlos Garcia',
+                customer_email: 'carlos.garcia@email.com',
+                transaction_date: '2025-05-19 11:20:18',
+                status: 'delivered',
+                payment_method: 'gcash',
+                subtotal: 2200,
+                shipping_fee: 100,
+                total_amount: 2300,
+                items: [
+                    {
+                        product_name: "Running Shoes",
+                        price: 2200,
+                        quantity: 1,
+                        color: 'white',
+                        size: '42'
+                    }
+                ]
             }
+        ];
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            populateTransactionsTable();
+            setupEventListeners();
         });
-        
-        // Sidebar toggle for responsive design
-        const toggleSidebar = document.getElementById('toggleSidebar');
-        const sidebarClose = document.getElementById('sidebarClose');
-        const sidebar = document.querySelector('.sidebar');
-        
-        toggleSidebar.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
-        });
-        
-        sidebarClose.addEventListener('click', function() {
-            sidebar.classList.remove('active');
-        });
-    });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Admin dropdown toggle
+            const adminDropdown = document.getElementById('adminDropdown');
+            const adminDropdownContent = document.getElementById('adminDropdownContent');
+            
+            adminDropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+                adminDropdown.classList.toggle('show');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!adminDropdown.contains(e.target)) {
+                    adminDropdown.classList.remove('show');
+                }
+            });
+            
+            // Sidebar toggle for responsive design
+            const toggleSidebar = document.getElementById('toggleSidebar');
+            const sidebarClose = document.getElementById('sidebarClose');
+            const sidebar = document.querySelector('.sidebar');
+            
+            toggleSidebar.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+            
+            sidebarClose.addEventListener('click', function() {
+                sidebar.classList.remove('active');
+            });
+        }
+
+        // Initialize all charts
+        function initializeCharts() {
+            initializeRevenueChart();
+            initializeStatusChart();
+            initializePaymentChart();
+            initializeProductsChart();
+        }
+
+        // Revenue Trend Chart
+        function initializeRevenueChart() {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Revenue (₱)',
+                        data: [8500, 12300, 15600, 18900, 22400, 19800, 25600, 28900, 24300, 26700, 29100, 31500],
+                        borderColor: '#0071c5',
+                        backgroundColor: 'rgba(0, 113, 197, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₱' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Order Status Chart
+        function initializeStatusChart() {
+            const ctx = document.getElementById('statusChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Delivered', 'Pending', 'Cancelled'],
+                    datasets: [{
+                        data: [847, 324, 76],
+                        backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Payment Methods Chart
+        function initializePaymentChart() {
+            const ctx = document.getElementById('paymentChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['GCash', 'Cash on Delivery', 'Credit/Debit Card'],
+                    datasets: [{
+                        data: [624, 398, 225],
+                        backgroundColor: ['#0071c5', '#17a2b8', '#6f42c1'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Top Products Chart
+        function initializeProductsChart() {
+            const ctx = document.getElementById('productsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['High-Waist Leggings', 'Athletic Shorts', 'Sports Bra', 'Running Shoes', 'Yoga Mat'],
+                    datasets: [{
+                        label: 'Units Sold',
+                        data: [245, 189, 167, 134, 98],
+                        backgroundColor: '#0071c5',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Populate transactions table
+        function populateTransactionsTable() {
+            const tbody = document.getElementById('transactionsTableBody');
+            tbody.innerHTML = '';
+
+            sampleTransactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                const date = new Date(transaction.transaction_date).toLocaleDateString();
+                const statusClass = `status-${transaction.status}`;
+                const itemsCount = transaction.items.length;
+                const itemsText = itemsCount === 1 ? '1 item' : `${itemsCount} items`;
+
+                row.innerHTML = `
+                    <td>${transaction.transaction_id}</td>
+                    <td>${transaction.customer_name}</td>
+                    <td>${date}</td>
+                    <td><span class="status-badge ${statusClass}">${transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}</span></td>
+                    <td>${transaction.payment_method.toUpperCase()}</td>
+                    <td>₱${transaction.total_amount.toLocaleString()}</td>
+                    <td>${itemsText}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Apply filters function
+        function applyFilters() {
+            const dateRange = document.getElementById('dateRange').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const paymentFilter = document.getElementById('paymentFilter').value;
+
+            // In a real application, this would filter the data and update charts/tables
+            console.log('Applying filters:', { dateRange, statusFilter, paymentFilter });
+            
+            // Show loading or update UI
+            alert('Filters applied successfully! In a real application, this would update all charts and tables with filtered data.');
+        }
+
+        // Export to PDF function
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Add title
+            doc.setFontSize(20);
+            doc.text('HirayaFit - Sales Report', 20, 20);
+            
+            // Add date range
+            doc.setFontSize(12);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 35);
+            
+            // Add summary statistics
+            doc.setFontSize(14);
+            doc.text('Summary Statistics', 20, 50);
+            doc.setFontSize(10);
+            doc.text('Total Revenue: ₱124,500', 20, 65);
+            doc.text('Total Orders: 1,247', 20, 75);
+            doc.text('Average Order Value: ₱1,598', 20, 85);
+            doc.text('Unique Customers: 892', 20, 95);
+            
+            // Add transactions table
+            doc.setFontSize(14);
+            doc.text('Recent Transactions', 20, 115);
+            
+            // Table headers
+            doc.setFontSize(8);
+            let yPos = 130;
+            doc.text('Transaction ID', 20, yPos);
+            doc.text('Customer', 70, yPos);
+            doc.text('Date', 110, yPos);
+            doc.text('Status', 140, yPos);
+            doc.text('Amount', 170, yPos);
+            
+            // Table data
+            yPos += 10;
+            sampleTransactions.forEach(transaction => {
+                if (yPos > 270) { // Start new page if needed
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.text(transaction.transaction_id.substring(0, 15) + '...', 20, yPos);
+                doc.text(transaction.customer_name, 70, yPos);
+                doc.text(new Date(transaction.transaction_date).toLocaleDateString(), 110, yPos);
+                doc.text(transaction.status, 140, yPos);
+                doc.text('₱' + transaction.total_amount.toLocaleString(), 170, yPos);
+                yPos += 8;
+            });
+            
+            // Save the PDF
+            doc.save('hirafit-sales-report.pdf');
+        }
+
+        // Export to CSV function
+        function exportToCSV() {
+            let csvContent = "Transaction ID,Customer Name,Customer Email,Date,Status,Payment Method,Subtotal,Shipping Fee,Total Amount,Items\n";
+            
+            sampleTransactions.forEach(transaction => {
+                const itemsDesc = transaction.items.map(item => 
+                    `${item.product_name} (${item.color}, ${item.size}) x${item.quantity}`
+                ).join('; ');
+                
+                csvContent += `${transaction.transaction_id},${transaction.customer_name},${transaction.customer_email},${transaction.transaction_date},${transaction.status},${transaction.payment_method},${transaction.subtotal},${transaction.shipping_fee},${transaction.total_amount},"${itemsDesc}"\n`;
+            });
+            
+            // Create and download CSV file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'hirafit-transactions.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // View all transactions function
+        function viewAllTransactions() {
+            alert('This would navigate to a detailed transactions page with pagination and advanced filters.');
+        }
     </script>
 </body>
 </html>

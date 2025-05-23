@@ -296,7 +296,7 @@ function getProgressValue($status) {
 
         <!-- Main Navigation -->
         <nav class="main-nav" id="mainNav">
-            <a href="userusershop.php">HOME</a>
+            <a   href="usershop.php">HOME</a>
         </nav>
     </header>
 
@@ -316,7 +316,7 @@ function getProgressValue($status) {
                     </div>
                     <h2>No Orders Yet</h2>
                     <p>You haven't placed any orders yet. Start shopping to see your orders here!</p>
-                    <a href="userusershop.php" class="btn-start-shopping">Start Shopping</a>
+                    <a   href="usershop.php" class="btn-start-shopping">Start Shopping</a>
                 </div>
             <?php elseif ($viewingOrder && $currentOrder): ?>
                 <!-- Order Detail View -->
