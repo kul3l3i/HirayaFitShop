@@ -80,8 +80,8 @@ body {
 }
 
 .logo span {
-    color: var(--secondary);
-}
+            color: var(--secondary);
+        }
 
 .search-bar {
     flex-grow: 1;
@@ -292,13 +292,15 @@ body {
         }
 
         .brand-logo {
-            font-size: 1.2rem;
-            color: #fff;
-            opacity: 0.8;
-            margin-bottom: 20px;
-            letter-spacing: 3px;
-            font-weight: 300;
-            animation: fadeIn 2s ease-out 0.5s both;
+            font-size: 25px;
+    font-weight: 700;
+    color: var(--light);
+    text-decoration: none;
+    letter-spacing: -0.5px;
+        }
+        
+        .brand-logo span {
+            color: var(--secondary);
         }
 
         .hero h1 {
@@ -2610,7 +2612,7 @@ footer {
         </div>
         
         <div class="hero-content">
-            <div class="brand-logo">HIRAYAFIT</div>
+            <div class="brand-logo">Hiraya<span>Fit</span></div>
             <h1>WHERE<br>PERFORMANCE<br>MEETS STYLE</h1>
             <p class="hero-subtitle">Engineered for athletes. Designed for life.<br>Experience the perfect fusion of innovation and elegance.</p>
         </div>

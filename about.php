@@ -1034,7 +1034,7 @@
                         <img src="/api/placeholder/400/400" alt="Regiie">
                     </div>
                     <div class="member-info">
-                        <h3 class="member-name">Enger Dulay</h3>
+                        <h3 class="member-name">Loraine Castro</h3>
                         <div class="member-position">Marketing Director</div>
                         <div class="member-social">
                             <a href="#"><i class="fab fa-linkedin"></i></a>
