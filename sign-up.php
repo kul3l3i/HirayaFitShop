@@ -883,7 +883,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
                       
                         </div>
                     </div>
-                    <a href="#"><i class="fas fa-heart"></i></a>
+                   <!-- <a href="#"><i class="fas fa-heart"></i></a>-->
                     <a href="#" id="cartBtn">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" id="cartCount">0</span>
