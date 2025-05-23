@@ -1146,7 +1146,7 @@ function formatDate($date) {
                             <p class="admin-dropdown-user-email"><?php echo htmlspecialchars($admin['email']); ?></p>
                         </div>
                         <a href="profile.php"><i class="fas fa-user"></i> Profile Settings</a>
-                        <!--<a href="change-password.php"><i class="fas fa-lock"></i> Change Password</a>-->
+                       
                         <a href="?logout=true" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     </div>
                 </div>
