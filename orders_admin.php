@@ -254,24 +254,126 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     }
 }
 
-// Handle export to CSV
-if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+require_once('TCPDF-main/TCPDF-main/tcpdf.php');
+
+function exportOrdersToPDF($orders) {
+    $totalOrders = 0;
+    $totalRevenue = 0;
+    foreach ($orders->transaction as $order) {
+        $totalOrders++;
+        $totalRevenue += (float)$order->total_amount;
+    }
+    $avgOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
+
+    $pdf = new TCPDF();
+    $pdf->SetCreator('HirayaFit');
+    $pdf->SetAuthor('HirayaFit');
+    $pdf->SetTitle('Orders Report');
+    $pdf->SetMargins(10, 10, 10);
+    $pdf->AddPage();
+
+    // HEADER SECTION
+    $html = '
+    <div style="text-align: center; font-family: helvetica;">
+        <h2 style="margin: 0; font-size: 20px;">HIRAYAFIT</h2>
+        <p style="margin: 0; font-size: 12px;">FITNESS & ATHLETIC WEAR</p>
+        <h3 style="margin: 10px 0;">ORDER REPORT</h3>
+        <small>Generated on: ' . date("F j, Y \\a\\t g:i A") . '</small>
+    </div><br>';
+
+    // SUMMARY SECTION
+    $html .= '
+    <div style="background-color: #2ecc71; color: white; padding: 12px; border-radius: 8px; font-size: 12px; margin-bottom: 10px;">
+        <table width="100%" style="text-align: center;">
+            <tr>
+                <td><b>' . $totalOrders . '</b><br>Total Orders</td>
+                <td><b>₱' . number_format($totalRevenue, 2) . '</b><br>Total Revenue</td>
+                <td><b>₱' . number_format($avgOrderValue, 2) . '</b><br>Avg. Order Value</td>
+            </tr>
+        </table>
+    </div>';
+
+    // ORDER DETAILS
+    foreach ($orders->transaction as $order) {
+        $itemsHTML = '';
+        $subtotal = 0;
+
+        foreach ($order->items->item as $item) {
+            $qty = (int)$item->quantity;
+            $unitPrice = (float)$item->price;
+            $lineTotal = $qty * $unitPrice;
+            $subtotal += $lineTotal;
+
+            $itemsHTML .= '
+            <tr>
+                <td>' . $item->product_name . '</td>
+                <td>' . $item->color . '</td>
+                <td>' . $item->size . '</td>
+                <td style="text-align:right;">₱' . number_format($unitPrice, 2) . '</td>
+                <td style="text-align:center;">' . $qty . '</td>
+                <td style="text-align:right;">₱' . number_format($lineTotal, 2) . '</td>
+            </tr>';
+        }
+
+        $shipping = isset($order->shipping_fee) ? (float)$order->shipping_fee : 100.00;
+        $grandTotal = $subtotal + $shipping;
+
+        $html .= '
+        <div style="margin-top: 20px;">
+            <h4 style="background-color: #8e44ad; color: white; padding: 8px; border-radius: 5px; font-size: 12px;">
+                ORDER #' . $order->transaction_id . ' - ' . strtoupper($order->status) . ' | ' . date("F j, Y g:i A", strtotime($order->transaction_date)) . '
+            </h4>
+            <p style="font-size: 10px; margin: 5px 0;">
+                <b>Customer:</b> ' . $order->shipping_info->fullname . '<br>
+                <b>Email:</b> ' . $order->shipping_info->email . '<br>
+                <b>Phone:</b> ' . $order->shipping_info->phone . '<br>
+                <b>Payment:</b> ' . $order->payment_method . '<br>
+                <b>Address:</b> ' . $order->shipping_info->address . ', ' . $order->shipping_info->city . ' ' . $order->shipping_info->postal_code . '<br>
+                <b>Notes:</b> ' . ($order->shipping_info->notes ?? 'None') . '
+            </p>
+            <table border="1" cellpadding="5" cellspacing="0" width="100%" style="font-size:9px; border-collapse: collapse;">
+                <thead style="background-color: #495057; color: white;">
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Color</th>
+                        <th>Size</th>
+                        <th>Unit Price</th>
+                        <th>Qty</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>' . $itemsHTML . '</tbody>
+            </table>
+            <div style="text-align: right; font-size: 10px; margin-top: 8px;">
+                Subtotal: ₱' . number_format($subtotal, 2) . '<br>
+                Shipping Fee: ₱' . number_format($shipping, 2) . '<br>
+                <b style="color: #2980b9;">TOTAL AMOUNT: ₱' . number_format($grandTotal, 2) . '</b>
+            </div>
+        </div>';
+    }
+
+    $html .= '<div style="text-align: center; font-size: 8px; color: #888; margin-top: 20px;">HirayaFit E-commerce Platform - Confidential Report</div>';
+
+    $pdf->writeHTML($html, true, false, true, false, '');
+
+    $fileName = 'HirayaFit_Orders_Report_' . date('Y-m-d_H-i-s') . '.pdf';
+    $filePath = sys_get_temp_dir() . '/' . $fileName;
+
+    $pdf->Output($filePath, 'F');
+    return $filePath;
+}
+if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
     $orders = loadOrdersXml();
     if ($orders !== false) {
-        $filePath = exportOrdersToCSV($orders);
-        
-        // Set headers for file download
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="orders_export_' . date('Y-m-d') . '.csv"');
-        
-        // Output the file
+        $filePath = exportOrdersToPDF($orders);
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . basename($filePath) . '"');
         readfile($filePath);
-        
-        // Delete the temporary file
         unlink($filePath);
         exit;
     }
 }
+
 
 // Get profile image URL
 $profileImageUrl = getProfileImageUrl($admin['profile_image']);
@@ -535,10 +637,11 @@ $orders = loadOrdersXml();
                 </div>
                 
                 <div class="export-container">
-                    <a href="orders_admin.php?export=csv" class="export-button">
-                        <i class="fas fa-file-export"></i> Export All Orders
-                    </a>
-                </div>
+    <a href="orders_admin.php?export=pdf" class="export-button">
+        <i class="fas fa-file-export"></i> Export All Orders (PDF)
+    </a>
+</div>
+
             </div>
             
             <div class="order-search">
