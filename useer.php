@@ -1037,7 +1037,7 @@ if ($loggedIn) {
                         <a href="login.php"><i class="fas fa-user-circle"></i></a>
                     <?php endif; ?>
 
-                    <a href="wishlist.php"><i class="fas fa-heart"></i></a>
+                    <!--<a href="wishlist.php"><i class="fas fa-heart"></i></a>-->
                     <a href="cart.php" id="cartBtn">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" id="cartCount">

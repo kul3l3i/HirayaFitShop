@@ -4,6 +4,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Include your environment-aware database connection
+include 'db_connect.php';
+
+// Initialize variables
+$error = '';
+$username_email = '';
 // Check if user is logged in
 $loggedIn = isset($_SESSION['user_id']);
 $user = null;
@@ -14,19 +20,7 @@ if (!$loggedIn) {
     exit();
 }
 
-// Database connection
-$db_host = 'localhost';
-$db_user = 'u801377270_hiraya_2025'; // Change to your database username
-$db_pass = 'Hiraya_2025'; // Change to your database password
-$db_name = 'u801377270_hiraya_2025'; // Replace with your actual database name
 
-// Create connection
-$conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
 
 // Fetch user details
 $stmt = $conn->prepare("SELECT id, fullname, username, email, address, phone, profile_image FROM users WHERE id = ?");
@@ -272,7 +266,7 @@ function getProgressValue($status) {
                                 <div class="account-links">
                                     <a href="profile.php"><i class="fas fa-user-circle"></i> My Profile</a>
                                     <a href="orders.php" class="active"><i class="fas fa-box"></i> My Orders</a>
-                                    <a href="wishlist.php"><i class="fas fa-heart"></i> My Wishlist</a>
+        
                                     <a href="settings.php"><i class="fas fa-cog"></i> Account Settings</a>
                                     <div class="sign-out-btn">
                                         <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
@@ -285,7 +279,7 @@ function getProgressValue($status) {
                         <a href="login.php"><i class="fas fa-user-circle"></i></a>
                     <?php endif; ?>
 
-                    <a href="wishlist.php"><i class="fas fa-heart"></i></a>
+                    <!--<a href="wishlist.php"><i class="fas fa-heart"></i></a>-->
                     <a href="cart.php" id="cartBtn">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" id="cartCount">
