@@ -124,7 +124,7 @@ $transaction = loadTransactionDetails($transactionId);
 
 if (!$transaction) {
     // Transaction not found, redirect to home
-    header("Location: userusershop.php.php");
+    header("Location: usershop.php");
     exit();
 }
 

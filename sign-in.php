@@ -63,7 +63,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $stmt->execute();
                     
                     // Redirect to user dashboard
-                    header("Location: userusershop.php.php");
+                    header("Location: usershop.php");
                     exit();
                 } else {
                     $error = "Invalid password";
@@ -198,7 +198,7 @@ function checkRememberedLogin($conn) {
             $stmt->execute();
             
             // Redirect to user dashboard
-            header("Location: userusershop.php.php");
+            header("Location: usershop.php");
             exit();
         }
     }
@@ -244,7 +244,7 @@ function checkRememberedLogin($conn) {
 if (isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])) {
     // Already logged in, redirect to appropriate page
     if ($_SESSION['user_type'] == 'user') {
-        header("Location: userusershop.php.php");
+        header("Location: usershop.php");
     } else {
         header("Location: dashboard.php");
     }

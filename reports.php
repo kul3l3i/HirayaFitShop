@@ -1024,121 +1024,134 @@
     </div>
 
     <script>
-        // Sample transaction data based on your XML structure
-        const sampleTransactions = [
-            {
-                transaction_id: 'TRX-683014A91A92D',
-                user_id: 2,
-                customer_name: 'Lai Rodriguez',
-                customer_email: 'rodriguez.elx@gmail.com',
-                transaction_date: '2025-05-23 08:24:41',
-                status: 'delivered',
-                payment_method: 'gcash',
-                subtotal: 1500,
-                shipping_fee: 100,
-                total_amount: 1600,
-                items: [
-                    {
-                        product_name: "Women's High-Waist Leggings",
-                        price: 1500,
-                        quantity: 1,
-                        color: 'black',
-                        size: 'S'
-                    }
-                ]
-            },
-            {
-                transaction_id: 'TRX-683014A91A93E',
-                user_id: 3,
-                customer_name: 'Maria Santos',
-                customer_email: 'maria.santos@email.com',
-                transaction_date: '2025-05-22 14:30:15',
-                status: 'pending',
-                payment_method: 'cod',
-                subtotal: 2400,
-                shipping_fee: 100,
-                total_amount: 2500,
-                items: [
-                    {
-                        product_name: "Men's Athletic Shorts",
-                        price: 1200,
-                        quantity: 2,
-                        color: 'blue',
-                        size: 'M'
-                    }
-                ]
-            },
-            {
-                transaction_id: 'TRX-683014A91A94F',
-                user_id: 4,
-                customer_name: 'John Cruz',
-                customer_email: 'john.cruz@email.com',
-                transaction_date: '2025-05-21 09:15:30',
-                status: 'delivered',
-                payment_method: 'gcash',
-                subtotal: 1800,
-                shipping_fee: 100,
-                total_amount: 1900,
-                items: [
-                    {
-                        product_name: "Sports Bra",
-                        price: 900,
-                        quantity: 2,
-                        color: 'pink',
-                        size: 'L'
-                    }
-                ]
-            },
-            {
-                transaction_id: 'TRX-683014A91A95G',
-                user_id: 5,
-                customer_name: 'Ana Reyes',
-                customer_email: 'ana.reyes@email.com',
-                transaction_date: '2025-05-20 16:45:22',
-                status: 'cancelled',
-                payment_method: 'card',
-                subtotal: 3000,
-                shipping_fee: 100,
-                total_amount: 3100,
-                items: [
-                    {
-                        product_name: "Yoga Mat",
-                        price: 1500,
-                        quantity: 2,
-                        color: 'purple',
-                        size: 'Standard'
-                    }
-                ]
-            },
-            {
-                transaction_id: 'TRX-683014A91A96H',
-                user_id: 6,
-                customer_name: 'Carlos Garcia',
-                customer_email: 'carlos.garcia@email.com',
-                transaction_date: '2025-05-19 11:20:18',
-                status: 'delivered',
-                payment_method: 'gcash',
-                subtotal: 2200,
-                shipping_fee: 100,
-                total_amount: 2300,
-                items: [
-                    {
-                        product_name: "Running Shoes",
-                        price: 2200,
-                        quantity: 1,
-                        color: 'white',
-                        size: '42'
-                    }
-                ]
-            }
-        ];
+        // Global variable to store transactions data
+        let transactionsData = [];
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-            initializeCharts();
-            populateTransactionsTable();
-            setupEventListeners();
+            loadTransactionsFromXML().then(() => {
+                initializeCharts();
+                populateTransactionsTable();
+                setupEventListeners();
+            }).catch(error => {
+                console.error('Error loading transactions:', error);
+                // Fallback to sample data if XML loading fails
+                loadSampleData();
+                initializeCharts();
+                populateTransactionsTable();
+                setupEventListeners();
+            });
         });
+
+        // Load transactions from XML file
+        async function loadTransactionsFromXML() {
+            try {
+                const response = await fetch('transac.xml');
+                const xmlText = await response.text();
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+                
+                // Check for parsing errors
+                const parserError = xmlDoc.querySelector('parsererror');
+                if (parserError) {
+                    throw new Error('XML parsing error: ' + parserError.textContent);
+                }
+                
+                // Parse transactions from XML
+                const transactions = xmlDoc.querySelectorAll('transaction');
+                transactionsData = [];
+                
+                transactions.forEach(transaction => {
+                    const transactionObj = {
+                        transaction_id: getXMLValue(transaction, 'transaction_id'),
+                        user_id: parseInt(getXMLValue(transaction, 'user_id')),
+                        customer_name: getXMLValue(transaction, 'customer_name'),
+                        customer_email: getXMLValue(transaction, 'customer_email'),
+                        transaction_date: getXMLValue(transaction, 'transaction_date'),
+                        status: getXMLValue(transaction, 'status'),
+                        payment_method: getXMLValue(transaction, 'payment_method'),
+                        subtotal: parseFloat(getXMLValue(transaction, 'subtotal')),
+                        shipping_fee: parseFloat(getXMLValue(transaction, 'shipping_fee')),
+                        total_amount: parseFloat(getXMLValue(transaction, 'total_amount')),
+                        items: []
+                    };
+                    
+                    // Parse items
+                    const items = transaction.querySelectorAll('item');
+                    items.forEach(item => {
+                        transactionObj.items.push({
+                            product_name: getXMLValue(item, 'product_name'),
+                            price: parseFloat(getXMLValue(item, 'price')),
+                            quantity: parseInt(getXMLValue(item, 'quantity')),
+                            color: getXMLValue(item, 'color'),
+                            size: getXMLValue(item, 'size')
+                        });
+                    });
+                    
+                    transactionsData.push(transactionObj);
+                });
+                
+                console.log('Loaded', transactionsData.length, 'transactions from XML');
+                
+            } catch (error) {
+                console.error('Error loading XML:', error);
+                throw error;
+            }
+        }
+
+        // Helper function to get XML element value
+        function getXMLValue(parent, tagName) {
+            const element = parent.querySelector(tagName);
+            return element ? element.textContent.trim() : '';
+        }
+
+        // Fallback sample data (in case XML loading fails)
+        function loadSampleData() {
+            transactionsData = [
+                {
+                    transaction_id: 'TRX-683014A91A92D',
+                    user_id: 2,
+                    customer_name: 'Lai Rodriguez',
+                    customer_email: 'rodriguez.elx@gmail.com',
+                    transaction_date: '2025-05-23 08:24:41',
+                    status: 'delivered',
+                    payment_method: 'gcash',
+                    subtotal: 1500,
+                    shipping_fee: 100,
+                    total_amount: 1600,
+                    items: [
+                        {
+                            product_name: "Women's High-Waist Leggings",
+                            price: 1500,
+                            quantity: 1,
+                            color: 'black',
+                            size: 'S'
+                        }
+                    ]
+                },
+                {
+                    transaction_id: 'TRX-683014A91A93E',
+                    user_id: 3,
+                    customer_name: 'Maria Santos',
+                    customer_email: 'maria.santos@email.com',
+                    transaction_date: '2025-05-22 14:30:15',
+                    status: 'pending',
+                    payment_method: 'cod',
+                    subtotal: 2400,
+                    shipping_fee: 100,
+                    total_amount: 2500,
+                    items: [
+                        {
+                            product_name: "Men's Athletic Shorts",
+                            price: 1200,
+                            quantity: 2,
+                            color: 'blue',
+                            size: 'M'
+                        }
+                    ]
+                }
+            ];
+        }
 
         // Setup event listeners
         function setupEventListeners() {
@@ -1146,14 +1159,16 @@
             const adminDropdown = document.getElementById('adminDropdown');
             const adminDropdownContent = document.getElementById('adminDropdownContent');
             
-            adminDropdown.addEventListener('click', function(e) {
-                e.stopPropagation();
-                adminDropdown.classList.toggle('show');
-            });
+            if (adminDropdown) {
+                adminDropdown.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    adminDropdown.classList.toggle('show');
+                });
+            }
             
             // Close dropdown when clicking outside
             document.addEventListener('click', function(e) {
-                if (!adminDropdown.contains(e.target)) {
+                if (adminDropdown && !adminDropdown.contains(e.target)) {
                     adminDropdown.classList.remove('show');
                 }
             });
@@ -1163,16 +1178,20 @@
             const sidebarClose = document.getElementById('sidebarClose');
             const sidebar = document.querySelector('.sidebar');
             
-            toggleSidebar.addEventListener('click', function() {
-                sidebar.classList.toggle('active');
-            });
+            if (toggleSidebar && sidebar) {
+                toggleSidebar.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                });
+            }
             
-            sidebarClose.addEventListener('click', function() {
-                sidebar.classList.remove('active');
-            });
+            if (sidebarClose && sidebar) {
+                sidebarClose.addEventListener('click', function() {
+                    sidebar.classList.remove('active');
+                });
+            }
         }
 
-        // Initialize all charts
+        // Initialize all charts with dynamic data
         function initializeCharts() {
             initializeRevenueChart();
             initializeStatusChart();
@@ -1180,16 +1199,21 @@
             initializeProductsChart();
         }
 
-        // Revenue Trend Chart
+        // Revenue Trend Chart - calculate from actual data
         function initializeRevenueChart() {
-            const ctx = document.getElementById('revenueChart').getContext('2d');
-            new Chart(ctx, {
+            const ctx = document.getElementById('revenueChart');
+            if (!ctx) return;
+            
+            // Calculate monthly revenue from transactions
+            const monthlyRevenue = calculateMonthlyRevenue();
+            
+            new Chart(ctx.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
                     datasets: [{
                         label: 'Revenue (₱)',
-                        data: [8500, 12300, 15600, 18900, 22400, 19800, 25600, 28900, 24300, 26700, 29100, 31500],
+                        data: monthlyRevenue,
                         borderColor: '#0071c5',
                         backgroundColor: 'rgba(0, 113, 197, 0.1)',
                         borderWidth: 3,
@@ -1219,15 +1243,34 @@
             });
         }
 
-        // Order Status Chart
+        // Calculate monthly revenue from transactions
+        function calculateMonthlyRevenue() {
+            const monthlyData = new Array(12).fill(0);
+            
+            transactionsData.forEach(transaction => {
+                if (transaction.status === 'delivered') {
+                    const date = new Date(transaction.transaction_date);
+                    const month = date.getMonth();
+                    monthlyData[month] += transaction.total_amount;
+                }
+            });
+            
+            return monthlyData;
+        }
+
+        // Order Status Chart - calculate from actual data
         function initializeStatusChart() {
-            const ctx = document.getElementById('statusChart').getContext('2d');
-            new Chart(ctx, {
+            const ctx = document.getElementById('statusChart');
+            if (!ctx) return;
+            
+            const statusCounts = calculateStatusCounts();
+            
+            new Chart(ctx.getContext('2d'), {
                 type: 'doughnut',
                 data: {
                     labels: ['Delivered', 'Pending', 'Cancelled'],
                     datasets: [{
-                        data: [847, 324, 76],
+                        data: [statusCounts.delivered, statusCounts.pending, statusCounts.cancelled],
                         backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
                         borderWidth: 0
                     }]
@@ -1244,15 +1287,32 @@
             });
         }
 
-        // Payment Methods Chart
+        // Calculate status counts
+        function calculateStatusCounts() {
+            const counts = { delivered: 0, pending: 0, cancelled: 0 };
+            
+            transactionsData.forEach(transaction => {
+                if (counts.hasOwnProperty(transaction.status)) {
+                    counts[transaction.status]++;
+                }
+            });
+            
+            return counts;
+        }
+
+        // Payment Methods Chart - calculate from actual data
         function initializePaymentChart() {
-            const ctx = document.getElementById('paymentChart').getContext('2d');
-            new Chart(ctx, {
+            const ctx = document.getElementById('paymentChart');
+            if (!ctx) return;
+            
+            const paymentCounts = calculatePaymentCounts();
+            
+            new Chart(ctx.getContext('2d'), {
                 type: 'pie',
                 data: {
                     labels: ['GCash', 'Cash on Delivery', 'Credit/Debit Card'],
                     datasets: [{
-                        data: [624, 398, 225],
+                        data: [paymentCounts.gcash, paymentCounts.cod, paymentCounts.card],
                         backgroundColor: ['#0071c5', '#17a2b8', '#6f42c1'],
                         borderWidth: 0
                     }]
@@ -1269,16 +1329,34 @@
             });
         }
 
-        // Top Products Chart
+        // Calculate payment method counts
+        function calculatePaymentCounts() {
+            const counts = { gcash: 0, cod: 0, card: 0 };
+            
+            transactionsData.forEach(transaction => {
+                const method = transaction.payment_method.toLowerCase();
+                if (method === 'gcash') counts.gcash++;
+                else if (method === 'cod' || method === 'cash on delivery') counts.cod++;
+                else if (method === 'card' || method === 'credit card' || method === 'debit card') counts.card++;
+            });
+            
+            return counts;
+        }
+
+        // Top Products Chart - calculate from actual data
         function initializeProductsChart() {
-            const ctx = document.getElementById('productsChart').getContext('2d');
-            new Chart(ctx, {
+            const ctx = document.getElementById('productsChart');
+            if (!ctx) return;
+            
+            const productData = calculateTopProducts();
+            
+            new Chart(ctx.getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels: ['High-Waist Leggings', 'Athletic Shorts', 'Sports Bra', 'Running Shoes', 'Yoga Mat'],
+                    labels: productData.labels,
                     datasets: [{
                         label: 'Units Sold',
-                        data: [245, 189, 167, 134, 98],
+                        data: productData.data,
                         backgroundColor: '#0071c5',
                         borderRadius: 4
                     }]
@@ -1300,12 +1378,40 @@
             });
         }
 
-        // Populate transactions table
+        // Calculate top products
+        function calculateTopProducts() {
+            const productCounts = {};
+            
+            transactionsData.forEach(transaction => {
+                transaction.items.forEach(item => {
+                    const productName = item.product_name;
+                    if (productCounts[productName]) {
+                        productCounts[productName] += item.quantity;
+                    } else {
+                        productCounts[productName] = item.quantity;
+                    }
+                });
+            });
+            
+            // Sort products by quantity and get top 5
+            const sortedProducts = Object.entries(productCounts)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5);
+            
+            return {
+                labels: sortedProducts.map(([name]) => name),
+                data: sortedProducts.map(([,count]) => count)
+            };
+        }
+
+        // Populate transactions table with dynamic data
         function populateTransactionsTable() {
             const tbody = document.getElementById('transactionsTableBody');
+            if (!tbody) return;
+            
             tbody.innerHTML = '';
 
-            sampleTransactions.forEach(transaction => {
+            transactionsData.forEach(transaction => {
                 const row = document.createElement('tr');
                 const date = new Date(transaction.transaction_date).toLocaleDateString();
                 const statusClass = `status-${transaction.status}`;
@@ -1325,23 +1431,75 @@
             });
         }
 
-        // Apply filters function
+        // Apply filters function - now works with dynamic data
         function applyFilters() {
-            const dateRange = document.getElementById('dateRange').value;
-            const statusFilter = document.getElementById('statusFilter').value;
-            const paymentFilter = document.getElementById('paymentFilter').value;
+            const dateRange = document.getElementById('dateRange')?.value;
+            const statusFilter = document.getElementById('statusFilter')?.value;
+            const paymentFilter = document.getElementById('paymentFilter')?.value;
 
-            // In a real application, this would filter the data and update charts/tables
-            console.log('Applying filters:', { dateRange, statusFilter, paymentFilter });
+            // Filter the transactions data
+            let filteredData = [...transactionsData];
             
-            // Show loading or update UI
-            alert('Filters applied successfully! In a real application, this would update all charts and tables with filtered data.');
+            // Apply status filter
+            if (statusFilter && statusFilter !== 'all') {
+                filteredData = filteredData.filter(t => t.status === statusFilter);
+            }
+            
+            // Apply payment method filter
+            if (paymentFilter && paymentFilter !== 'all') {
+                filteredData = filteredData.filter(t => t.payment_method === paymentFilter);
+            }
+            
+            // Apply date range filter
+            if (dateRange && dateRange !== 'all') {
+                const now = new Date();
+                let startDate = new Date();
+                
+                switch(dateRange) {
+                    case '7days':
+                        startDate.setDate(now.getDate() - 7);
+                        break;
+                    case '30days':
+                        startDate.setDate(now.getDate() - 30);
+                        break;
+                    case '90days':
+                        startDate.setDate(now.getDate() - 90);
+                        break;
+                }
+                
+                filteredData = filteredData.filter(t => {
+                    const transactionDate = new Date(t.transaction_date);
+                    return transactionDate >= startDate;
+                });
+            }
+            
+            // Update the display with filtered data
+            const originalData = transactionsData;
+            transactionsData = filteredData;
+            
+            // Reinitialize charts and table with filtered data
+            initializeCharts();
+            populateTransactionsTable();
+            
+            // Restore original data
+            transactionsData = originalData;
+            
+            console.log('Applied filters:', { dateRange, statusFilter, paymentFilter });
+            console.log('Filtered results:', filteredData.length, 'transactions');
         }
 
-        // Export to PDF function
+        // Export to PDF function - now uses dynamic data
         function exportToPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+            
+            // Calculate summary statistics
+            const totalRevenue = transactionsData
+                .filter(t => t.status === 'delivered')
+                .reduce((sum, t) => sum + t.total_amount, 0);
+            const totalOrders = transactionsData.length;
+            const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+            const uniqueCustomers = new Set(transactionsData.map(t => t.customer_email)).size;
             
             // Add title
             doc.setFontSize(20);
@@ -1355,10 +1513,10 @@
             doc.setFontSize(14);
             doc.text('Summary Statistics', 20, 50);
             doc.setFontSize(10);
-            doc.text('Total Revenue: ₱124,500', 20, 65);
-            doc.text('Total Orders: 1,247', 20, 75);
-            doc.text('Average Order Value: ₱1,598', 20, 85);
-            doc.text('Unique Customers: 892', 20, 95);
+            doc.text(`Total Revenue: ₱${totalRevenue.toLocaleString()}`, 20, 65);
+            doc.text(`Total Orders: ${totalOrders.toLocaleString()}`, 20, 75);
+            doc.text(`Average Order Value: ₱${avgOrderValue.toFixed(2)}`, 20, 85);
+            doc.text(`Unique Customers: ${uniqueCustomers.toLocaleString()}`, 20, 95);
             
             // Add transactions table
             doc.setFontSize(14);
@@ -1375,7 +1533,7 @@
             
             // Table data
             yPos += 10;
-            sampleTransactions.forEach(transaction => {
+            transactionsData.forEach(transaction => {
                 if (yPos > 270) { // Start new page if needed
                     doc.addPage();
                     yPos = 20;
@@ -1393,11 +1551,11 @@
             doc.save('hirafit-sales-report.pdf');
         }
 
-        // Export to CSV function
+        // Export to CSV function - now uses dynamic data
         function exportToCSV() {
             let csvContent = "Transaction ID,Customer Name,Customer Email,Date,Status,Payment Method,Subtotal,Shipping Fee,Total Amount,Items\n";
             
-            sampleTransactions.forEach(transaction => {
+            transactionsData.forEach(transaction => {
                 const itemsDesc = transaction.items.map(item => 
                     `${item.product_name} (${item.color}, ${item.size}) x${item.quantity}`
                 ).join('; ');
@@ -1419,7 +1577,7 @@
 
         // View all transactions function
         function viewAllTransactions() {
-            alert('This would navigate to a detailed transactions page with pagination and advanced filters.');
+            alert(`Showing all ${transactionsData.length} transactions. This would navigate to a detailed transactions page with pagination and advanced filters.`);
         }
     </script>
 </body>
