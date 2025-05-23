@@ -1635,3 +1635,6 @@ document.getElementById('exportPDF').addEventListener('click', function() {
     window.location.href = window.location.pathname + '?' + urlParams.toString();
 });
 </script>
+
+<body>
+</html>
