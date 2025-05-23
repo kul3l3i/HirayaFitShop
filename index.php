@@ -2615,7 +2615,7 @@ footer {
             <p class="hero-subtitle">Engineered for athletes. Designed for life.<br>Experience the perfect fusion of innovation and elegance.</p>
         </div>
         
-        <!-- Performance Stats -->
+        <!-- Performance Stats 
         <div class="stats-bar">
             <div class="stat-item">
                 <span class="stat-number">24/7</span>
@@ -2629,7 +2629,7 @@ footer {
                 <span class="stat-number">∞</span>
                 <span class="stat-label">Style</span>
             </div>
-        </div>
+        </div>-->
         
         <!-- Scroll Indicator -->
         <div class="scroll-indicator">
@@ -2743,7 +2743,7 @@ footer {
                         <div class="collection-content">
                             <h3>Active Lifestyle</h3>
                             <p>Stylish designs for every workout</p>
-                          
+                            <a href="women.php" class="btn">SHOP WOMEN</a>
                         </div>
                     </div>
                 </div>
@@ -2768,7 +2768,7 @@ footer {
             <div class="shop-promo-left">
                 <div class="promo-card about">
                     <div class="promo-image">
-                        <img src="images/about-us.jpg" alt="About Our Company">
+                        <img src="images/abt-us.jpg" alt="About Our Company">
                     </div>
                     <div class="promo-content">
                         <h3>About Us</h3>
@@ -2781,7 +2781,7 @@ footer {
             <div class="shop-promo-right">
                 <div class="promo-card contact">
                     <div class="promo-image">
-                        <img src="images/contact-us.jpg" alt="Contact Our Team">
+                        <img src="images/contactus.jpg" alt="Contact Our Team">
                     </div>
                     <div class="promo-content">
                         <h3>Contact Us</h3>
