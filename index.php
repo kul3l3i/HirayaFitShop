@@ -2745,7 +2745,7 @@ footer {
                         <div class="collection-content">
                             <h3>Active Lifestyle</h3>
                             <p>Stylish designs for every workout</p>
-                            <a href="women.php" class="btn">SHOP WOMEN</a>
+                           
                         </div>
                     </div>
                 </div>
