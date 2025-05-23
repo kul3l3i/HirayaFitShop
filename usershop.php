@@ -1432,7 +1432,7 @@ if ($loggedIn) {
 
     <!-- NEW: Promotional Slideshow -->
     <div class="slideshow-container">
-        <div class="slideshow-slide active" style="background-image: url('images/sum.jpg');">
+        <div class="slideshow-slide active" style="background-image: url('images/sss.webp');">
             <div class="slideshow-content">
                 <h2>Summer Collection 2025</h2>
                 <p>Discover our new breathable activewear for your summer workouts</p>

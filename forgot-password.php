@@ -2,22 +2,12 @@
 session_start();
 
 
-// Database connection
-$db_host = 'localhost';
-$db_user = 'u801377270_hiraya_2025'; // Change to your database username
-$db_pass = 'Hiraya_2025'; // Change to your database password
-$db_name = 'u801377270_hiraya_2025'; // Change to your database name
+// Include your environment-aware database connection
+include 'db_connect.php';
 
-$conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-
-
-$error_message = "";
-$success_message = "";
+// Initialize variables
+$error = '';
+$username_email = '';
 
 // Step 1: Request Password Reset
 if (isset($_POST['request_reset'])) {
