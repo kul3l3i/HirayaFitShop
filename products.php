@@ -1415,13 +1415,12 @@ form:not(.search-form) button:hover {
 <?php if (!empty($message)) echo $message; ?>
 
 
-    <script>
-   document.addEventListener('DOMContentLoaded', function() {
-    // Admin dropdown toggle
-    const adminDropdown = document.getElementById('adminDropdown');
-    const adminDropdownContent = document.getElementById('adminDropdownContent');
-    
-    if (adminDropdown) {
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Admin dropdown toggle
+        const adminDropdown = document.getElementById('adminDropdown');
+        const adminDropdownContent = document.getElementById('adminDropdownContent');
+        
         adminDropdown.addEventListener('click', function(e) {
             e.stopPropagation();
             adminDropdown.classList.toggle('show');
@@ -1429,28 +1428,27 @@ form:not(.search-form) button:hover {
         
         // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {
-            if (adminDropdown && !adminDropdown.contains(e.target)) {
+            if (!adminDropdown.contains(e.target)) {
                 adminDropdown.classList.remove('show');
             }
         });
-    }
-    
-    // Sidebar toggle for responsive design
-    const toggleSidebar = document.getElementById('toggleSidebar');
-    const sidebarClose = document.getElementById('sidebarClose');
-    const sidebar = document.querySelector('.sidebar');
-    
-    if (toggleSidebar && sidebar) {
+        
+        // Sidebar toggle for responsive design
+        const toggleSidebar = document.getElementById('toggleSidebar');
+        const sidebarClose = document.getElementById('sidebarClose');
+        const sidebar = document.querySelector('.sidebar');
+        
         toggleSidebar.addEventListener('click', function() {
             sidebar.classList.toggle('active');
         });
         
-        if (sidebarClose) {
-            sidebarClose.addEventListener('click', function() {
-                sidebar.classList.remove('active');
-            });
-        }
-    }
+        sidebarClose.addEventListener('click', function() {
+            sidebar.classList.remove('active');
+        });
+    });
+    </script>
+    <script>
+  
     
     // Modal functionality
     const productModal = document.getElementById('productModal');
@@ -1589,5 +1587,6 @@ form:not(.search-form) button:hover {
     }
 });
     </script>
+    
 </body>
 </html>

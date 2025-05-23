@@ -604,7 +604,7 @@ $orders = loadOrdersXml();
                             <h4 class="admin-dropdown-user-name"><?php echo htmlspecialchars($admin['fullname']); ?></h4>
                             <p class="admin-dropdown-user-email"><?php echo htmlspecialchars($admin['email']); ?></p>
                         </div>
-                        <a href="profile.php"><i class="fas fa-user"></i> Profile Settings</a>
+                        <a href="profileAdmin.php"><i class="fas fa-user"></i> Profile Settings</a>
                        
                         <a href="logout.php" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     </div>
@@ -772,6 +772,41 @@ $orders = loadOrdersXml();
             </div>
         </div>
     </div>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Admin dropdown toggle
+        const adminDropdown = document.getElementById('adminDropdown');
+        const adminDropdownContent = document.getElementById('adminDropdownContent');
+        
+        adminDropdown.addEventListener('click', function(e) {
+            e.stopPropagation();
+            adminDropdown.classList.toggle('show');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!adminDropdown.contains(e.target)) {
+                adminDropdown.classList.remove('show');
+            }
+        });
+        
+        // Sidebar toggle for responsive design
+        const toggleSidebar = document.getElementById('toggleSidebar');
+        const sidebarClose = document.getElementById('sidebarClose');
+        const sidebar = document.querySelector('.sidebar');
+        
+        toggleSidebar.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+        });
+        
+        sidebarClose.addEventListener('click', function() {
+            sidebar.classList.remove('active');
+        });
+    });
+    </script>
+   
     
     <script>
         // Toggle admin dropdown menu
