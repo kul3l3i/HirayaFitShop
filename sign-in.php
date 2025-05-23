@@ -1,7 +1,5 @@
 <?php
 // Start session
-
-
 session_start();
 include 'db_connect.php';
 // Initialize variables
@@ -730,7 +728,7 @@ if (isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])) {
                             <a href="sign-in.php"><i class="fas fa-sign-in-alt"></i> Sign In</a>
                             <a href="sign-up.php"><i class="fas fa-user-plus"></i> Sign Up</a>
                             <a href="#orders"><i class="fas fa-box"></i> Track Orders</a>
-                            <a href="#wishlist"><i class="fas fa-heart"></i> My Wishlist</a>
+           
                         </div>
                     </div>
                     <a href="#"><i class="fas fa-heart"></i></a>

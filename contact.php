@@ -924,7 +924,7 @@
     <header class="header">
         <div class="container">
             <div class="navbar">
-                <a href="index.html" class="logo">Hiraya<span>Fit</span></a>
+                <a href="index.php" class="logo">Hiraya<span>Fit</span></a>
                 
                 <div class="search-bar">
                     <input type="text" id="searchInput" placeholder="Search products...">
@@ -939,7 +939,7 @@
                             <a href="sign-in.php"><i class="fas fa-sign-in-alt"></i> Sign In</a>
                             <a href="sign-up.php"><i class="fas fa-user-plus"></i> Sign Up</a>
                             <a href="#orders"><i class="fas fa-box"></i> Track Orders</a>
-                            <a href="#wishlist"><i class="fas fa-heart"></i> My Wishlist</a>
+                            
                         </div>
                     </div>
                     <a href="#"><i class="fas fa-heart"></i></a>
@@ -978,7 +978,7 @@
     <!-- Breadcrumbs -->
     <div class="breadcrumbs">
         <div class="container">
-            <a href="index.html">Home</a>
+            <a href="index.php">Home</a>
             <span class="separator"></span>
             <span>Contact Us</span>
         </div>
@@ -1527,15 +1527,7 @@ function addCategoryResultsEventListeners() {
         });
     });
     
-    // Add to wishlist buttons
-    const wishlistButtons = document.querySelectorAll('#categoryResults .add-to-wishlist');
-    wishlistButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const productId = this.getAttribute('data-id');
-            addToWishlist(productId);
-        });
-    });
-}
+    
 
 // Updated function to show product details in a modal
 function showQuickView(productId) {

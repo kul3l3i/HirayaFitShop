@@ -209,14 +209,7 @@ function addSearchResultsEventListeners() {
         });
     });
     
-    // Add to wishlist buttons
-    const wishlistButtons = document.querySelectorAll('#searchResults .add-to-wishlist');
-    wishlistButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const productId = this.getAttribute('data-id');
-            addToWishlist(productId);
-        });
-    });
+    
 }
  // Generate star rating HTML
  function generateStars(rating) {

@@ -618,7 +618,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
     <header class="header">
         <div class="container">
             <div class="navbar">
-                <a href="index.html" class="logo">Hiraya<span>Fit</span></a>
+                <a href="index.php" class="logo">Hiraya<span>Fit</span></a>
                 
                 <div class="nav-icons">
                     <div class="account-dropdown" id="accountDropdown">
@@ -647,7 +647,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
     
     <!-- Navigation -->
     <nav class="main-nav" id="mainNav">
-        <a href="index.html">HOME</a>
+        <a href="index.php">HOME</a>
         <a href="shop.html">SHOP</a>
         <a href="men.html">MEN</a>
         <a href="women.html">WOMEN</a>

@@ -854,7 +854,7 @@
     <header class="header">
         <div class="container">
             <div class="navbar">
-                <a href="index.html" class="logo">Hiraya<span>Fit</span></a>
+                <a href="index.php" class="logo">Hiraya<span>Fit</span></a>
                 
                 <div class="search-bar">
                     <input type="text" id="searchInput" placeholder="Search products...">
@@ -939,7 +939,7 @@
             </div>
             
             <div class="about-image">
-                <img src="/api/placeholder/600/700" alt="HirayaFit Team">
+                <img src="images/leilaikim.jpg" alt="HirayaFit Team">
             </div>
         </div>
     </section>
@@ -1285,9 +1285,7 @@ function displayCategoryResults(results, categoryName) {
                     <button class="quick-view" data-id="${product.id}">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="add-to-wishlist" data-id="${product.id}">
-                        <i class="far fa-heart"></i>
-                    </button>
+                   
                     <button class="add-to-cart-icon" data-id="${product.id}">
                         <i class="fas fa-shopping-cart"></i>
                     </button>
@@ -1343,15 +1341,6 @@ function addCategoryResultsEventListeners() {
         });
     });
     
-    // Add to wishlist buttons
-    const wishlistButtons = document.querySelectorAll('#categoryResults .add-to-wishlist');
-    wishlistButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const productId = this.getAttribute('data-id');
-            addToWishlist(productId);
-        });
-    });
-}
 
 // Updated function to show product details in a modal
 function showQuickView(productId) {
