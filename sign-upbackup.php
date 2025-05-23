@@ -788,7 +788,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
     <!-- Simplified Navigation -->
     <nav class="main-nav" id="mainNav">
         <a href="index.php">HOME</a>
-        <a href="shop.php">SHOP</a>
+        <a href="usershop.php">SHOP</a>
         <a href="men.php">MEN</a>
         <a href="women.php">WOMEN</a>
         <a href="foot.php">FOOTWEAR</a>

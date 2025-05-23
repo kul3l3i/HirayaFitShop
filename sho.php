@@ -872,7 +872,7 @@
     <!-- Simplified Navigation -->
     <nav class="main-nav" id="mainNav">
         <a href="index.php">HOME</a>
-        <a href="shop.php" class="active">SHOP</a>
+        <a href="usershop.php" class="active">SHOP</a>
         <a href="men.php">MEN</a>
         <a href="women.php">WOMEN</a>
         <a href="foot.php">FOOTWEAR</a>

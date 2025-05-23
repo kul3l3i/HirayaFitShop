@@ -837,7 +837,7 @@ $conn->close();
         
         <!-- Main Navigation -->
         <nav class="main-nav" id="mainNav">
-        <a href="usershop.php" class="active">HOME</a>  
+        <a href="userusershop.php" class="active">HOME</a>  
         
     </nav>
     
@@ -1003,7 +1003,7 @@ $conn->close();
         function searchProducts() {
             const searchQuery = document.getElementById('searchInput').value.trim();
             if (searchQuery !== '') {
-                window.location.href = 'shop.php?search=' + encodeURIComponent(searchQuery);
+                window.location.href = 'usershop.php?search=' + encodeURIComponent(searchQuery);
             }
         }
         

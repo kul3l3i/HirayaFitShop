@@ -358,7 +358,7 @@ $_SESSION['cart_count'] = count($cartItems);
 
         <!-- Main Navigation -->
         <nav class="main-nav" id="mainNav">
-            <a href="usershop.php">HOME</a>
+            <a href="userusershop.php">HOME</a>
            
         </nav>
     </header>
@@ -373,7 +373,7 @@ $_SESSION['cart_count'] = count($cartItems);
                     <i class="fas fa-shopping-cart"></i>
                     <h2>Your cart is empty</h2>
                     <p>Looks like you haven't added any items to your cart yet.</p>
-                    <a href="usershop.php" class="btn-primary">Continue Shopping</a>
+                    <a href="userusershop.php" class="btn-primary">Continue Shopping</a>
                 </div>
             <?php else: ?>
                 <form action="cart.php" method="post" id="cartForm">
@@ -487,7 +487,7 @@ $_SESSION['cart_count'] = count($cartItems);
                     </div>
                     <button type="button" id="checkout-btn" class="btn-checkout" onclick="proceedToCheckout()"
                         disabled>Proceed to Checkout</button>
-                    <a href="shop.php" class="btn-continue-shopping">Continue Shopping</a>
+                    <a href="usershop.php" class="btn-continue-shopping">Continue Shopping</a>
                 </div>
             <?php endif; ?>
         </div>
