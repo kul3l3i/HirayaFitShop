@@ -271,6 +271,8 @@ foreach ($xml->products->product as $product) {
     --grey: #767676;
     --sidebar-width: 250px;
     --danger: #dc3545;
+    --warning: #ffc107;
+    --success: #28a745;
 }
 
 * {

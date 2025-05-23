@@ -373,7 +373,7 @@ $_SESSION['cart_count'] = count($cartItems);
                     <i class="fas fa-shopping-cart"></i>
                     <h2>Your cart is empty</h2>
                     <p>Looks like you haven't added any items to your cart yet.</p>
-                    <a href="shop.php" class="btn-primary">Continue Shopping</a>
+                    <a href="usershop.php" class="btn-primary">Continue Shopping</a>
                 </div>
             <?php else: ?>
                 <form action="cart.php" method="post" id="cartForm">
