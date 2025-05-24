@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 24, 2025 at 04:34 PM
+-- Generation Time: May 24, 2025 at 05:48 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -47,7 +47,7 @@ CREATE TABLE `admins` (
 --
 
 INSERT INTO `admins` (`admin_id`, `username`, `password`, `fullname`, `email`, `role`, `is_active`, `last_login`, `remember_token`, `profile_image`, `created_at`, `updated_at`) VALUES
-(1, 'admin', '$2y$10$XU0j7UDiD69jZc/fDNQvKO7hwUAt2kgTCXNxKmDUkeaPmwRpcCgF.', 'HirayaFit Admin', 'leiumarsayco@gmail.com', 'super_admin', 1, '2025-05-24 14:06:53', NULL, 'admin_1_1748076724.jpeg', '2025-05-24 08:23:38', '2025-05-24 14:06:53');
+(1, 'admin', '21232f297a57a5a743894a0e4a801fc3', 'HirayaFit Admin', 'leiumarsayco@gmail.com', 'super_admin', 1, '2025-05-24 15:46:03', NULL, 'admin_1_1748076724.jpeg', '2025-05-24 08:23:38', '2025-05-24 15:46:03');
 
 -- --------------------------------------------------------
 
@@ -73,7 +73,7 @@ CREATE TABLE `conversations` (
 --
 
 INSERT INTO `conversations` (`id`, `user_id`, `admin_id`, `subject`, `status`, `priority`, `category`, `last_message_at`, `created_at`, `updated_at`) VALUES
-(1, 1, NULL, 'ayos ang products nyo', 'open', 'normal', 'general', '2025-05-24 14:18:47', '2025-05-24 14:18:47', '2025-05-24 14:18:47');
+(1, 1, NULL, 'ayos ang products nyo', 'open', 'normal', 'general', '2025-05-24 15:08:39', '2025-05-24 14:18:47', '2025-05-24 15:08:39');
 
 -- --------------------------------------------------------
 
@@ -104,7 +104,8 @@ CREATE TABLE `messages` (
 --
 
 INSERT INTO `messages` (`id`, `sender_type`, `sender_id`, `receiver_type`, `receiver_id`, `subject`, `message`, `is_read`, `message_type`, `parent_message_id`, `attachment_path`, `priority`, `status`, `created_at`, `updated_at`) VALUES
-(1, 'user', 1, 'admin', 1, 'ayos ang products nyo', 'ang ganda ng bra nyp', 0, 'general', NULL, NULL, 'normal', 'active', '2025-05-24 14:18:47', '2025-05-24 14:18:47');
+(1, 'user', 1, 'admin', 1, 'ayos ang products nyo', 'ang ganda ng bra nyp', 0, 'general', NULL, NULL, 'normal', 'active', '2025-05-24 14:18:47', '2025-05-24 14:18:47'),
+(2, 'user', 1, 'admin', 1, '', 'ang  ganda ng products nyo boss', 0, 'general', NULL, NULL, 'normal', 'active', '2025-05-24 15:08:39', '2025-05-24 15:08:39');
 
 -- --------------------------------------------------------
 
@@ -141,7 +142,8 @@ CREATE TABLE `message_read_status` (
 --
 
 INSERT INTO `message_read_status` (`id`, `message_id`, `reader_type`, `reader_id`, `read_at`) VALUES
-(1, 1, 'user', 1, '2025-05-24 14:19:12');
+(1, 1, 'user', 1, '2025-05-24 14:19:12'),
+(4, 2, 'user', 1, '2025-05-24 15:08:44');
 
 -- --------------------------------------------------------
 
@@ -201,7 +203,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `fullname`, `email`, `username`, `password`, `address`, `phone`, `profile_image`, `is_active`, `remember_token`, `last_login`, `otp_code`, `otp_purpose`, `otp_created_at`, `otp_expires_at`, `otp_is_used`, `created_at`, `updated_at`) VALUES
-(1, 'Jhun Sayco', 'jhunsayco70@gmail.com', 'hapon', '$2y$10$LGIUFmxHN1sQ4cmmxAxVLej1uCFudaPIoBcVwRHg39H43057oDKqi', 'Talacsan San Rafael Bulacan', '9633945919', '683183796d1a3_received_338513232261148.jpeg', 1, NULL, '2025-05-24 13:57:27', '880592', 'EMAIL_VERIFICATION', '2025-05-24 02:29:45', '2025-05-24 02:44:45', 1, '2025-05-24 08:29:45', '2025-05-24 13:57:27');
+(1, 'Jhun Sayco', 'jhunsayco70@gmail.com', 'hapon', '$2y$10$LGIUFmxHN1sQ4cmmxAxVLej1uCFudaPIoBcVwRHg39H43057oDKqi', 'Talacsan San Rafael Bulacan', '9633945919', '683183796d1a3_received_338513232261148.jpeg', 1, NULL, '2025-05-24 14:51:40', '880592', 'EMAIL_VERIFICATION', '2025-05-24 02:29:45', '2025-05-24 02:44:45', 1, '2025-05-24 08:29:45', '2025-05-24 14:51:40');
 
 --
 -- Indexes for dumped tables
@@ -292,7 +294,7 @@ ALTER TABLE `conversations`
 -- AUTO_INCREMENT for table `messages`
 --
 ALTER TABLE `messages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `message_participants`
@@ -304,7 +306,7 @@ ALTER TABLE `message_participants`
 -- AUTO_INCREMENT for table `message_read_status`
 --
 ALTER TABLE `message_read_status`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `notification_preferences`
