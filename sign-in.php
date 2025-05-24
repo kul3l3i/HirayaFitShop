@@ -1,21 +1,7 @@
 <?php
 // Start session
-
-
-
 session_start();
-
-// Include your environment-aware database connection
 include 'db_connect.php';
-
-// Initialize variables
-$error = '';
-$username_email = '';
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
 
 // Initialize variables
 $error = '';
@@ -26,7 +12,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username_email = trim($_POST['username_email']);
     $password = $_POST['password'];
     $remember_me = isset($_POST['remember_me']) ? true : false;
-    
+
     // Validate inputs
     if (empty($username_email) || empty($password)) {
         $error = "Both username/email and password are required";
@@ -34,50 +20,44 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Check if it's a user first
         $sql = "SELECT id, username, email, password, fullname, is_active FROM users 
                 WHERE (username = ? OR email = ?)";
-        
+
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("ss", $username_email, $username_email);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         if ($result->num_rows == 1) {
-            // User found - process user login as before
+            // User found
             $user = $result->fetch_assoc();
-            
-            // Check if user is active
+
             if ($user['is_active'] == 0) {
                 $error = "Your account is not active. Please verify your email.";
             } else {
-                // Verify password
                 if (password_verify($password, $user['password'])) {
                     // Set session variables
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['username'] = $user['username'];
                     $_SESSION['fullname'] = $user['fullname'];
                     $_SESSION['user_type'] = 'user';
-                    
+
                     // Set cookies if remember me is checked
                     if ($remember_me) {
-                        $token = bin2hex(random_bytes(32)); // Generate a secure token
-                        
-                        // Store token in database
+                        $token = bin2hex(random_bytes(32));
                         $sql = "UPDATE users SET remember_token = ? WHERE id = ?";
                         $stmt = $conn->prepare($sql);
                         $stmt->bind_param("si", $token, $user['id']);
                         $stmt->execute();
-                        
-                        // Set cookies - expire after 30 days
-                        setcookie("hirayafit_token", $token, time() + (86400 * 30), "/"); // 86400 = 1 day
+
+                        setcookie("hirayafit_token", $token, time() + (86400 * 30), "/");
                         setcookie("hirayafit_user_id", $user['id'], time() + (86400 * 30), "/");
                     }
-                    
-                    // Update last login time
+
+                    // Update last login
                     $sql = "UPDATE users SET last_login = NOW() WHERE id = ?";
                     $stmt = $conn->prepare($sql);
                     $stmt->bind_param("i", $user['id']);
                     $stmt->execute();
-                    
-                    // Redirect to user dashboard
+
                     header("Location: usershop.php");
                     exit();
                 } else {
@@ -85,89 +65,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             }
         } else {
-            // No user found, check if it's an admin
-            $sql = "SELECT admin_id, username, password, fullname, role, is_active FROM admins 
+            // No user found, check admin
+            $sql = "SELECT admin_id, username, email, password, fullname, role, is_active FROM admins 
                     WHERE (username = ? OR email = ?)";
-            
+
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("ss", $username_email, $username_email);
             $stmt->execute();
             $result = $stmt->get_result();
-            
+
             if ($result->num_rows == 1) {
-                // Admin found
                 $admin = $result->fetch_assoc();
-                
-                // Check if admin is active
+
                 if ($admin['is_active'] == 0) {
                     $error = "This admin account is inactive. Please contact super admin.";
                 } else {
-                    // For admin with username 'admin', special case handling
-                    if ($admin['username'] == 'admin' && $password == 'admin') {
-                        // Direct password match for admin user
-                        // Set session variables
+                    // ✅ MD5 check for admin passwords
+                    if (md5($password) === $admin['password']) {
                         $_SESSION['admin_id'] = $admin['admin_id'];
                         $_SESSION['admin_username'] = $admin['username'];
                         $_SESSION['admin_fullname'] = $admin['fullname'];
                         $_SESSION['admin_role'] = $admin['role'];
                         $_SESSION['user_type'] = 'admin';
-                        
-                        // Set cookies if remember me is checked
+
                         if ($remember_me) {
-                            $token = bin2hex(random_bytes(32)); // Generate a secure token
-                            
-                            // Store token in database
+                            $token = bin2hex(random_bytes(32));
                             $sql = "UPDATE admins SET remember_token = ? WHERE admin_id = ?";
                             $stmt = $conn->prepare($sql);
                             $stmt->bind_param("si", $token, $admin['admin_id']);
                             $stmt->execute();
-                            
-                            // Set cookies - expire after 30 days
+
                             setcookie("hirayafit_admin_token", $token, time() + (86400 * 30), "/");
                             setcookie("hirayafit_admin_id", $admin['admin_id'], time() + (86400 * 30), "/");
                         }
-                        
-                        // Update last login time
+
                         $sql = "UPDATE admins SET last_login = NOW() WHERE admin_id = ?";
                         $stmt = $conn->prepare($sql);
                         $stmt->bind_param("i", $admin['admin_id']);
                         $stmt->execute();
-                        
-                        // Redirect to admin dashboard
-                        header("Location: dashboard.php");
-                        exit();
-                    }
-                    // Regular password verification for other admin accounts
-                    else if (password_verify($password, $admin['password'])) {
-                        // Set session variables
-                        $_SESSION['admin_id'] = $admin['admin_id'];
-                        $_SESSION['admin_username'] = $admin['username'];
-                        $_SESSION['admin_fullname'] = $admin['fullname'];
-                        $_SESSION['admin_role'] = $admin['role'];
-                        $_SESSION['user_type'] = 'admin';
-                        
-                        // Set cookies if remember me is checked
-                        if ($remember_me) {
-                            $token = bin2hex(random_bytes(32)); // Generate a secure token
-                            
-                            // Store token in database
-                            $sql = "UPDATE admins SET remember_token = ? WHERE admin_id = ?";
-                            $stmt = $conn->prepare($sql);
-                            $stmt->bind_param("si", $token, $admin['admin_id']);
-                            $stmt->execute();
-                            
-                            // Set cookies - expire after 30 days
-                            setcookie("hirayafit_admin_token", $token, time() + (86400 * 30), "/");
-                            setcookie("hirayafit_admin_id", $admin['admin_id'], time() + (86400 * 30), "/");
-                        }
-                        
-                        // Update last login time
-                        $sql = "UPDATE admins SET last_login = NOW() WHERE admin_id = ?";
-                        $stmt = $conn->prepare($sql);
-                        $stmt->bind_param("i", $admin['admin_id']);
-                        $stmt->execute();
-                        
-                        // Redirect to admin dashboard
+
                         header("Location: dashboard.php");
                         exit();
                     } else {
@@ -183,81 +119,70 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 // Check for remembered login
 function checkRememberedLogin($conn) {
-    // Check for user cookie
     if (isset($_COOKIE['hirayafit_token']) && isset($_COOKIE['hirayafit_user_id'])) {
         $token = $_COOKIE['hirayafit_token'];
         $user_id = $_COOKIE['hirayafit_user_id'];
-        
-        // Verify token in database
+
         $sql = "SELECT id, username, fullname FROM users 
                 WHERE id = ? AND remember_token = ? AND is_active = TRUE";
-        
+
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("is", $user_id, $token);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         if ($result->num_rows == 1) {
             $user = $result->fetch_assoc();
-            
-            // Set session variables
+
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['fullname'] = $user['fullname'];
             $_SESSION['user_type'] = 'user';
-            
-            // Update last login time
+
             $sql = "UPDATE users SET last_login = NOW() WHERE id = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $user['id']);
             $stmt->execute();
-            
-            // Redirect to user dashboard
+
             header("Location: usershop.php");
             exit();
         }
     }
-    
-    // Check for admin cookie
+
     if (isset($_COOKIE['hirayafit_admin_token']) && isset($_COOKIE['hirayafit_admin_id'])) {
         $token = $_COOKIE['hirayafit_admin_token'];
         $admin_id = $_COOKIE['hirayafit_admin_id'];
-        
-        // Verify token in database
+
         $sql = "SELECT admin_id, username, fullname, role FROM admins 
                 WHERE admin_id = ? AND remember_token = ? AND is_active = TRUE";
-        
+
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("is", $admin_id, $token);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         if ($result->num_rows == 1) {
             $admin = $result->fetch_assoc();
-            
-            // Set session variables
+
             $_SESSION['admin_id'] = $admin['admin_id'];
             $_SESSION['admin_username'] = $admin['username'];
             $_SESSION['admin_fullname'] = $admin['fullname'];
             $_SESSION['admin_role'] = $admin['role'];
             $_SESSION['user_type'] = 'admin';
-            
-            // Update last login time
+
             $sql = "UPDATE admins SET last_login = NOW() WHERE admin_id = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $admin['admin_id']);
             $stmt->execute();
-            
-            // Redirect to admin dashboard
+
             header("Location: dashboard.php");
             exit();
         }
     }
 }
 
-// Check if user is already logged in via session or cookie
+// Already logged in?
 if (isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])) {
-    // Already logged in, redirect to appropriate page
     if ($_SESSION['user_type'] == 'user') {
         header("Location: usershop.php");
     } else {
@@ -265,10 +190,10 @@ if (isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])) {
     }
     exit();
 } else {
-    // Check for remembered login
     checkRememberedLogin($conn);
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -743,10 +668,10 @@ if (isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])) {
                             <a href="sign-in.php"><i class="fas fa-sign-in-alt"></i> Sign In</a>
                             <a href="sign-up.php"><i class="fas fa-user-plus"></i> Sign Up</a>
                             <a href="#orders"><i class="fas fa-box"></i> Track Orders</a>
-                            <a href="#wishlist"><i class="fas fa-heart"></i> My Wishlist</a>
+           
                         </div>
                     </div>
-                    <a href="#"><i class="fas fa-heart"></i></a>
+                   <!-- <a href="#"><i class="fas fa-heart"></i></a>-->
                     <a href="#" id="cartBtn">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" id="cartCount">0</span>
@@ -762,7 +687,7 @@ if (isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])) {
     
     <!-- Simplified Navigation -->
     <nav class="main-nav" id="mainNav">
-        <a href="in.php" class="active">HOME</a>  
+        <a href="index.php" class="active">HOME</a>  
         <a href="about.php">ABOUT</a>
         <a href="contact.php">CONTACT</a>
     </nav>

@@ -43,7 +43,7 @@ CREATE TABLE admins (
 
 -- Generate a new hash for password 'admin' and insert admin account
 INSERT INTO admins (username, password, fullname, email, role)
-VALUES ('admin', '$2y$10$XU0j7UDiD69jZc/fDNQvKO7hwUAt2kgTCXNxKmDUkeaPmwRpcCgF.', 'HirayaFit Admin', 'leiumarsayco@gmail.com', 'super_admin');
+VALUES ('admin', '21232f297a57a5a743894a0e4a801fc3.', 'HirayaFit Admin', 'leiumarsayco@gmail.com', 'super_admin');
 
 
 -- Messages table to store conversations between users and admins
