@@ -1,11 +1,10 @@
 <?php
-session_start();
+// Include your environment-aware database connection
 include 'db_connect.php';
 
 // Initialize variables
-$success_message = '';
-$error_message = '';
-
+$error = '';
+$username_email = '';
 // Check if the user is logged in
 if (!isset($_SESSION['admin_id'])) {
     header("Location: sign-in.php");
@@ -74,50 +73,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-   
-if (isset($_POST['submit'])) {
-    $admin_id = $_SESSION['admin_id']; // Make sure this session is set upon login
-    $current_password = $_POST['current_password'];
-    $new_password = $_POST['new_password'];
-    $confirm_password = $_POST['confirm_password'];
-
-    // Check for empty fields
-    if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
-        $error_message = "All fields are required.";
-    } else {
-        // Get current hashed password from DB
-        $sql = "SELECT password FROM admins WHERE admin_id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("i", $admin_id);
-        $stmt->execute();
-        $stmt->bind_result($stored_password);
-        $stmt->fetch();
-        $stmt->close();
-
-        // Verify current password
-        if (!password_verify($current_password, $stored_password)) {
-            $error_message = "Current password is incorrect.";
+    // FIXED: Password change for placeholder passwords
+    if (isset($_POST['change_password'])) {
+        $admin_id = $_SESSION['admin_id'];
+        $current_password = $_POST['current_password'];
+        $new_password = $_POST['new_password'];
+        $confirm_password = $_POST['confirm_password'];
+    
+        // Check for empty fields
+        if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
+            $error_message = "All password fields are required.";
+        } elseif (strlen($new_password) < 6) {
+            $error_message = "New password must be at least 6 characters long.";
         } elseif ($new_password !== $confirm_password) {
             $error_message = "New password and confirm password do not match.";
         } else {
-            // Hash the new password and update
-            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-            $update_sql = "UPDATE admins SET password = ? WHERE admin_id = ?";
-            $update_stmt = $conn->prepare($update_sql);
-            $update_stmt->bind_param("si", $hashed_password, $admin_id);
-
-            if ($update_stmt->execute()) {
-                $success_message = "Password changed successfully.";
+            // Get current password hash from DB
+            $sql = "SELECT password FROM admins WHERE admin_id = ?";
+            $stmt_pwd = $conn->prepare($sql);
+            $stmt_pwd->bind_param("i", $admin_id);
+            $stmt_pwd->execute();
+            $stmt_pwd->bind_result($stored_password);
+            $stmt_pwd->fetch();
+            $stmt_pwd->close();
+    
+            // Compare the hashed input with stored hash
+            if (md5($current_password) !== $stored_password) {
+                $error_message = "Current password is incorrect.";
             } else {
-                $error_message = "Failed to change password. Please try again.";
+                // Hash the new password with md5
+                $hashed_new_password = md5($new_password);
+    
+                $update_sql = "UPDATE admins SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE admin_id = ?";
+                $update_stmt = $conn->prepare($update_sql);
+                $update_stmt->bind_param("si", $hashed_new_password, $admin_id);
+    
+                if ($update_stmt->execute()) {
+                    $success_message = "Password changed successfully!";
+                    header("Location: " . $_SERVER['PHP_SELF'] . "?success=password_changed");
+                    exit;
+                } else {
+                    $error_message = "Failed to change password. Please try again.";
+                }
+                $update_stmt->close();
             }
-
-            $update_stmt->close();
         }
     }
-}
-    
-    if (isset($_POST['upload_profile_image'])) {
+        if (isset($_POST['upload_profile_image'])) {
         // Handle profile image upload
         if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === 0) {
             $upload_dir = 'uploads/profiles/';
@@ -173,6 +175,12 @@ if (isset($_POST['submit'])) {
     }
 }
 
+// Handle success message from redirect
+if (isset($_GET['success']) && $_GET['success'] === 'password_changed') {
+    $new_pwd = isset($_GET['new_pwd']) ? $_GET['new_pwd'] : '';
+    $success_message = "Password changed successfully!" . (!empty($new_pwd) ? " Your new password is: " . htmlspecialchars($new_pwd) : "");
+}
+
 // Function to get profile image URL
 function getProfileImageUrl($profileImage) {
     if (!empty($profileImage) && file_exists("uploads/profiles/" . $profileImage)) {
@@ -186,8 +194,6 @@ $profileImageUrl = getProfileImageUrl($admin['profile_image']);
 
 $stmt->close();
 ?>
-
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -402,6 +408,12 @@ $stmt->close();
             margin-bottom: 20px;
             font-size: 14px;
             font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+        
+        .alert i {
+            margin-right: 8px;
         }
         
         .alert-success {
@@ -414,6 +426,22 @@ $stmt->close();
             background-color: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
+        }
+        
+        /* Password Info Box */
+        .password-info {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .password-info strong {
+            display: block;
+            margin-bottom: 5px;
         }
         
         /* Settings Grid */
@@ -603,6 +631,16 @@ $stmt->close();
             color: var(--grey);
         }
         
+        /* Password strength indicator */
+        .password-strength {
+            margin-top: 5px;
+            font-size: 12px;
+        }
+        
+        .strength-weak { color: var(--danger); }
+        .strength-medium { color: var(--warning); }
+        .strength-strong { color: var(--success); }
+        
         /* Responsive Design */
         @media (max-width: 992px) {
             .settings-grid {
@@ -662,11 +700,11 @@ $stmt->close();
             <a href="stock.php"><i class="fas fa-box"></i> Stock Management</a>
             
             <div class="menu-title">USERS</div>
-            <a href="users.php"><i class="fas fa-users"></i> User Management</a>
+            <a href="user-management.php"><i class="fas fa-users"></i> User Management</a>
             
             <div class="menu-title">REPORTS & SETTINGS</div>
             <a href="reports.php"><i class="fas fa-file-pdf"></i> Reports & Analytics</a>
-            <a href="settings.php" class="active"><i class="fas fa-cog"></i> System Settings</a>
+            <a href="profileAdmin.php" class="active"><i class="fas fa-cog"></i> System Settings</a>
         </div>
     </aside>
 
@@ -703,7 +741,7 @@ $stmt->close();
 
             <?php if (!empty($success_message)): ?>
                 <div class="alert alert-success">
-                    <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
+                    <i class="fas fa-check-circle"></i> <?php echo $success_message; ?>
                 </div>
             <?php endif; ?>
 
@@ -794,12 +832,17 @@ $stmt->close();
                         Change Password
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="">
+                        <div class="password-info">
+                            <strong>Password Change Instructions:</strong>
+                            For current password, use one of these: <code>admin</code>, <code>password</code>, or <code>123456</code>
+                        </div>
+                        
+                        <form method="POST" action="" id="passwordForm">
                             <div class="settings-grid">
                                 <div class="form-group">
                                     <label class="form-label" for="current_password">Current Password</label>
                                     <input type="password" id="current_password" name="current_password" 
-                                           class="form-input" required>
+                                           class="form-input" placeholder="admin, password, or 123456" required>
                                 </div>
                                 
                                 <div></div> <!-- Empty cell for spacing -->
@@ -808,12 +851,14 @@ $stmt->close();
                                     <label class="form-label" for="new_password">New Password</label>
                                     <input type="password" id="new_password" name="new_password" 
                                            class="form-input" minlength="6" required>
+                                    <div id="passwordStrength" class="password-strength"></div>
                                 </div>
                                 
                                 <div class="form-group">
                                     <label class="form-label" for="confirm_password">Confirm New Password</label>
                                     <input type="password" id="confirm_password" name="confirm_password" 
                                            class="form-input" minlength="6" required>
+                                    <div id="passwordMatch" class="password-strength"></div>
                                 </div>
                             </div>
                             
@@ -884,21 +929,68 @@ $stmt->close();
             });
         }
         
-        // Password confirmation validation
+        // Password strength checker
         const newPassword = document.getElementById('new_password');
         const confirmPassword = document.getElementById('confirm_password');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const passwordMatch = document.getElementById('passwordMatch');
+        
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            let feedback = '';
+            
+            if (password.length >= 8) strength++;
+            if (password.match(/[a-z]/)) strength++;
+            if (password.match(/[A-Z]/)) strength++;
+            if (password.match(/[0-9]/)) strength++;
+            if (password.match(/[^a-zA-Z0-9]/)) strength++;
+            
+            switch (strength) {
+                case 0:
+                case 1:
+                    feedback = '<span class="strength-weak">Weak password</span>';
+                    break;
+                case 2:
+                case 3:
+                    feedback = '<span class="strength-medium">Medium password</span>';
+                    break;
+                case 4:
+                case 5:
+                    feedback = '<span class="strength-strong">Strong password</span>';
+                    break;
+            }
+            
+            return feedback;
+        }
         
         function validatePassword() {
-            if (newPassword.value !== confirmPassword.value) {
-                confirmPassword.setCustomValidity("Passwords don't match");
+            if (newPassword.value && confirmPassword.value) {
+                if (newPassword.value === confirmPassword.value) {
+                    passwordMatch.innerHTML = '<span class="strength-strong">Passwords match</span>';
+                    confirmPassword.setCustomValidity('');
+                } else {
+                    passwordMatch.innerHTML = '<span class="strength-weak">Passwords do not match</span>';
+                    confirmPassword.setCustomValidity("Passwords don't match");
+                }
             } else {
+                passwordMatch.innerHTML = '';
                 confirmPassword.setCustomValidity('');
             }
         }
         
-        if (newPassword && confirmPassword) {
-            newPassword.addEventListener('change', validatePassword);
-            confirmPassword.addEventListener('keyup', validatePassword);
+        if (newPassword) {
+            newPassword.addEventListener('input', function() {
+                if (this.value) {
+                    passwordStrength.innerHTML = checkPasswordStrength(this.value);
+                } else {
+                    passwordStrength.innerHTML = '';
+                }
+                validatePassword();
+            });
+        }
+        
+        if (confirmPassword) {
+            confirmPassword.addEventListener('input', validatePassword);
         }
         
         // File input preview
@@ -977,6 +1069,17 @@ $stmt->close();
                 }
             });
         });
+        
+        // Clear password form after successful submission
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('success') === 'password_changed') {
+            const passwordForm = document.getElementById('passwordForm');
+            if (passwordForm) {
+                passwordForm.reset();
+                passwordStrength.innerHTML = '';
+                passwordMatch.innerHTML = '';
+            }
+        }
     });
     </script>
 </body>

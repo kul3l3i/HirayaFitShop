@@ -1412,10 +1412,12 @@ if ($loggedIn) {
                     <?php endif; ?>
 
                     <!-- Updated Cart Button -->
+                    <a href="messagesUser.php"><i class="fas fa-envelope"></i></a>
                     <a href="cart.php" id="cartBtn" class="active">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" id="cartCount">0</span>
                     </a>
+                    
                 </div>
 
                 <button class="menu-toggle" id="mobileMenuToggle">

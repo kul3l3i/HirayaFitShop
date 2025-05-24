@@ -102,96 +102,6 @@ if (isset($_POST['update_stock'])) {
     exit;
 }
 
-// Handle CSV Export
-if (isset($_GET['export']) && $_GET['export'] === 'csv') {
-    header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="stock_report_' . date('Y-m-d') . '.csv"');
-    
-    $output = fopen('php://output', 'w');
-    
-    // CSV Headers
-    fputcsv($output, [
-        'Product ID',
-        'Product Name',
-        'Category',
-        'Current Stock',
-        'Stock Status',
-        'Price (PHP)',
-        'Total Value (PHP)',
-        'Featured',
-        'On Sale',
-        'Last Updated'
-    ]);
-    
-    // CSV Data
-    foreach ($xml->products->product as $product) {
-        $stock = (int)$product->stock;
-        $price = (float)$product->price;
-        $totalValue = $stock * $price;
-        
-        $stockStatus = 'In Stock';
-        if ($stock == 0) {
-            $stockStatus = 'Out of Stock';
-        } elseif ($stock <= 5) {
-            $stockStatus = 'Low Stock';
-        }
-        
-        fputcsv($output, [
-            (string)$product->id,
-            (string)$product->name,
-            (string)$product->category,
-            $stock,
-            $stockStatus,
-            number_format($price, 2),
-            number_format($totalValue, 2),
-            (string)$product->featured === 'true' ? 'Yes' : 'No',
-            (string)$product->on_sale === 'true' ? 'Yes' : 'No',
-            date('Y-m-d H:i:s')
-        ]);
-    }
-    
-    fclose($output);
-    exit;
-}
-
-// Handle Stock History Export
-if (isset($_GET['export']) && $_GET['export'] === 'history') {
-    header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="stock_history_' . date('Y-m-d') . '.csv"');
-    
-    $output = fopen('php://output', 'w');
-    
-    // CSV Headers
-    fputcsv($output, [
-        'Date',
-        'Product ID',
-        'Product Name',
-        'Old Stock',
-        'New Stock',
-        'Change',
-        'Reason',
-        'Admin'
-    ]);
-    
-    // CSV Data
-    if (isset($xml->stock_history)) {
-        foreach ($xml->stock_history->entry as $entry) {
-            fputcsv($output, [
-                (string)$entry->date,
-                (string)$entry->product_id,
-                (string)$entry->product_name,
-                (string)$entry->old_stock,
-                (string)$entry->new_stock,
-                (string)$entry->change,
-                (string)$entry->reason,
-                (string)$entry->admin_name
-            ]);
-        }
-    }
-    
-    fclose($output);
-    exit;
-}
 
 // Get filter and search parameters
 $search = $_GET['search'] ?? '';
@@ -253,7 +163,354 @@ foreach ($xml->products->product as $product) {
     }
 }
 ?>
+<?php
+// Include TCPDF library (make sure to include the path to your TCPDF installation)
+require_once('TCPDF-main/TCPDF-main/tcpdf.php');
 
+// HirayaFit Color Palette
+define('HIRAYAFIT_PRIMARY', '#111111');
+define('HIRAYAFIT_SECONDARY', '#0071c5');
+define('HIRAYAFIT_ACCENT', '#e5e5e5');
+define('HIRAYAFIT_LIGHT', '#ffffff');
+define('HIRAYAFIT_DARK', '#111111');
+define('HIRAYAFIT_GREY', '#767676');
+define('HIRAYAFIT_DANGER', '#dc3545');
+
+// Handle PDF Export
+if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
+    // Create new PDF document
+    $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+    
+    // Set document information
+    $pdf->SetCreator('HirayaFit Stock Management System');
+    $pdf->SetAuthor('HirayaFit Admin');
+    $pdf->SetTitle('HirayaFit Stock Report - ' . date('Y-m-d'));
+    $pdf->SetSubject('HirayaFit Stock Report');
+    
+    // Custom header
+    $pdf->SetHeaderData('', 0, '', '');
+    $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+    $pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
+    
+    // Set default monospaced font
+    $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+    
+    // Set margins
+    $pdf->SetMargins(15, 25, 15);
+    $pdf->SetHeaderMargin(5);
+    $pdf->SetFooterMargin(10);
+    
+    // Set auto page breaks
+    $pdf->SetAutoPageBreak(TRUE, 25);
+    
+    // Add a page
+    $pdf->AddPage();
+    
+    // Custom Header Design
+    $pdf->SetFillColor(17, 17, 17); // Primary color
+    $pdf->Rect(0, 0, 210, 35, 'F');
+    
+    // HirayaFit Logo/Title
+    $pdf->SetTextColor(255, 255, 255);
+    $pdf->SetFont('helvetica', 'B', 24);
+    $pdf->SetXY(15, 8);
+    $pdf->Cell(0, 10, 'HIRAYAFIT', 0, 1, 'L');
+    
+    $pdf->SetFont('helvetica', '', 12);
+    $pdf->SetXY(15, 18);
+    $pdf->Cell(0, 6, 'Stock Management Report', 0, 1, 'L');
+    
+    // Date and time on the right
+    $pdf->SetFont('helvetica', '', 10);
+    $pdf->SetXY(140, 12);
+    $pdf->Cell(0, 6, 'Generated: ' . date('M d, Y H:i'), 0, 1, 'R');
+    
+    // Blue accent line
+    $pdf->SetFillColor(0, 113, 197); // Secondary color
+    $pdf->Rect(0, 35, 210, 3, 'F');
+    
+    // Reset text color and position
+    $pdf->SetTextColor(17, 17, 17);
+    $pdf->SetY(45);
+    
+    // Main content
+    $pdf->SetFont('helvetica', 'B', 16);
+    $pdf->Cell(0, 10, 'Stock Overview Report', 0, 1, 'C');
+    $pdf->SetY($pdf->GetY() + 5);
+    
+    // Create styled HTML table
+    $html = '<style>
+        .header-row {
+            background-color: ' . HIRAYAFIT_PRIMARY . ';
+            color: ' . HIRAYAFIT_LIGHT . ';
+            font-weight: bold;
+            text-align: center;
+        }
+        .data-row {
+            background-color: ' . HIRAYAFIT_LIGHT . ';
+            border-bottom: 1px solid ' . HIRAYAFIT_ACCENT . ';
+        }
+        .data-row:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .status-in-stock { color: #28a745; font-weight: bold; }
+        .status-low-stock { color: #ffc107; font-weight: bold; }
+        .status-out-stock { color: ' . HIRAYAFIT_DANGER . '; font-weight: bold; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .currency { color: ' . HIRAYAFIT_SECONDARY . '; font-weight: bold; }
+    </style>';
+    
+    $html .= '<table border="0" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-top: 10px;">';
+    $html .= '<thead>';
+    $html .= '<tr class="header-row" style="background-color: ' . HIRAYAFIT_PRIMARY . '; color: white;">';
+    $html .= '<th width="8%" style="padding: 10px; border: 1px solid #ddd;">ID</th>';
+    $html .= '<th width="22%" style="padding: 10px; border: 1px solid #ddd;">Product Name</th>';
+    $html .= '<th width="12%" style="padding: 10px; border: 1px solid #ddd;">Category</th>';
+    $html .= '<th width="8%" style="padding: 10px; border: 1px solid #ddd;">Stock</th>';
+    $html .= '<th width="12%" style="padding: 10px; border: 1px solid #ddd;">Status</th>';
+    $html .= '<th width="12%" style="padding: 10px; border: 1px solid #ddd;">Price (₱)</th>';
+    $html .= '<th width="14%" style="padding: 10px; border: 1px solid #ddd;">Total Value</th>';
+    $html .= '<th width="6%" style="padding: 10px; border: 1px solid #ddd;">Featured</th>';
+    $html .= '<th width="6%" style="padding: 10px; border: 1px solid #ddd;">Sale</th>';
+    $html .= '</tr>';
+    $html .= '</thead>';
+    $html .= '<tbody>';
+    
+    // Add data rows with alternating colors
+    $rowCount = 0;
+    foreach ($xml->products->product as $product) {
+        $stock = (int)$product->stock;
+        $price = (float)$product->price;
+        $totalValue = $stock * $price;
+        
+        $stockStatus = 'In Stock';
+        $statusClass = 'status-in-stock';
+        if ($stock == 0) {
+            $stockStatus = 'Out of Stock';
+            $statusClass = 'status-out-stock';
+        } elseif ($stock <= 5) {
+            $stockStatus = 'Low Stock';
+            $statusClass = 'status-low-stock';
+        }
+        
+        $rowBg = ($rowCount % 2 == 0) ? '#ffffff' : '#f8f9fa';
+        $rowCount++;
+        
+        $html .= '<tr style="background-color: ' . $rowBg . ';">';
+        $html .= '<td style="padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold; color: ' . HIRAYAFIT_SECONDARY . ';">' . htmlspecialchars((string)$product->id) . '</td>';
+        $html .= '<td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars((string)$product->name) . '</td>';
+        $html .= '<td style="padding: 8px; border: 1px solid #ddd; color: ' . HIRAYAFIT_GREY . ';">' . htmlspecialchars((string)$product->category) . '</td>';
+        $html .= '<td style="padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold;">' . $stock . '</td>';
+        $html .= '<td style="padding: 8px; border: 1px solid #ddd; text-align: center;" class="' . $statusClass . '">' . $stockStatus . '</td>';
+        $html .= '<td style="padding: 8px; border: 1px solid #ddd; text-align: right; color: ' . HIRAYAFIT_SECONDARY . '; font-weight: bold;">₱' . number_format($price, 2) . '</td>';
+        $html .= '<td style="padding: 8px; border: 1px solid #ddd; text-align: right; color: ' . HIRAYAFIT_SECONDARY . '; font-weight: bold;">₱' . number_format($totalValue, 2) . '</td>';
+        $html .= '<td style="padding: 8px; border: 1px solid #ddd; text-align: center;">' . ((string)$product->featured === 'true' ? '★' : '—') . '</td>';
+        $html .= '<td style="padding: 8px; border: 1px solid #ddd; text-align: center;">' . ((string)$product->on_sale === 'true' ? '🏷' : '—') . '</td>';
+        $html .= '</tr>';
+    }
+    
+    $html .= '</tbody>';
+    $html .= '</table>';
+    
+    // Calculate summary statistics
+    $totalProducts = count($xml->products->product);
+    $totalValue = 0;
+    $outOfStock = 0;
+    $lowStock = 0;
+    $inStock = 0;
+    
+    foreach ($xml->products->product as $product) {
+        $stock = (int)$product->stock;
+        $price = (float)$product->price;
+        $totalValue += ($stock * $price);
+        
+        if ($stock == 0) $outOfStock++;
+        elseif ($stock <= 5) $lowStock++;
+        else $inStock++;
+    }
+    
+    // Summary section with cards design
+    $html .= '<br><div style="margin-top: 30px;">';
+    $html .= '<h3 style="color: ' . HIRAYAFIT_PRIMARY . '; border-bottom: 2px solid ' . HIRAYAFIT_SECONDARY . '; padding-bottom: 5px;">Summary Dashboard</h3>';
+    
+    // Summary cards in a table layout
+    $html .= '<table border="0" cellpadding="0" cellspacing="10" style="width: 100%; margin-top: 15px;">';
+    $html .= '<tr>';
+    
+    // Total Products Card
+    $html .= '<td width="25%" style="background-color: ' . HIRAYAFIT_SECONDARY . '; color: white; padding: 15px; text-align: center; border-radius: 5px;">';
+    $html .= '<div style="font-size: 24px; font-weight: bold;">' . $totalProducts . '</div>';
+    $html .= '<div style="font-size: 12px;">Total Products</div>';
+    $html .= '</td>';
+    
+    // Total Value Card
+    $html .= '<td width="25%" style="background-color: #28a745; color: white; padding: 15px; text-align: center; border-radius: 5px;">';
+    $html .= '<div style="font-size: 20px; font-weight: bold;">₱' . number_format($totalValue, 2) . '</div>';
+    $html .= '<div style="font-size: 12px;">Total Inventory Value</div>';
+    $html .= '</td>';
+    
+    // In Stock Card
+    $html .= '<td width="25%" style="background-color: #17a2b8; color: white; padding: 15px; text-align: center; border-radius: 5px;">';
+    $html .= '<div style="font-size: 24px; font-weight: bold;">' . $inStock . '</div>';
+    $html .= '<div style="font-size: 12px;">In Stock</div>';
+    $html .= '</td>';
+    
+    // Low Stock Card
+    $html .= '<td width="25%" style="background-color: #ffc107; color: white; padding: 15px; text-align: center; border-radius: 5px;">';
+    $html .= '<div style="font-size: 24px; font-weight: bold;">' . $lowStock . '</div>';
+    $html .= '<div style="font-size: 12px;">Low Stock</div>';
+    $html .= '</td>';
+    
+    $html .= '</tr>';
+    $html .= '</table>';
+    
+    // Out of Stock Alert (if any)
+    if ($outOfStock > 0) {
+        $html .= '<div style="background-color: #f8d7da; border: 1px solid ' . HIRAYAFIT_DANGER . '; color: ' . HIRAYAFIT_DANGER . '; padding: 10px; margin-top: 15px; border-radius: 5px; text-align: center;">';
+        $html .= '<strong>⚠ ALERT:</strong> ' . $outOfStock . ' product(s) are out of stock and need immediate restocking!';
+        $html .= '</div>';
+    }
+    
+    $html .= '</div>';
+    
+    // Print HTML content
+    $pdf->writeHTML($html, true, false, true, false, '');
+    
+    // Custom footer
+    $pdf->SetY(-20);
+    $pdf->SetFillColor(229, 229, 229); // Accent color
+    $pdf->Rect(0, -20, 210, 20, 'F');
+    $pdf->SetTextColor(118, 118, 118);
+    $pdf->SetFont('helvetica', '', 8);
+    $pdf->Cell(0, 10, 'HirayaFit Stock Management System | Generated on ' . date('F j, Y \a\t g:i A'), 0, 0, 'C');
+    
+    // Output PDF
+    $pdf->Output('hirayafit_stock_report_' . date('Y-m-d') . '.pdf', 'D');
+    exit;
+}
+
+// Handle Stock History PDF Export
+if (isset($_GET['export']) && $_GET['export'] === 'history_pdf') {
+    // Create new PDF document
+    $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+    
+    // Set document information
+    $pdf->SetCreator('HirayaFit Stock Management System');
+    $pdf->SetAuthor('HirayaFit Admin');
+    $pdf->SetTitle('HirayaFit Stock History Report - ' . date('Y-m-d'));
+    $pdf->SetSubject('HirayaFit Stock History Report');
+    
+    // Custom header
+    $pdf->SetHeaderData('', 0, '', '');
+    $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+    $pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
+    
+    // Set margins
+    $pdf->SetMargins(15, 25, 15);
+    $pdf->SetHeaderMargin(5);
+    $pdf->SetFooterMargin(10);
+    
+    // Set auto page breaks
+    $pdf->SetAutoPageBreak(TRUE, 25);
+    
+    // Add a page
+    $pdf->AddPage();
+    
+    // Custom Header Design
+    $pdf->SetFillColor(17, 17, 17); // Primary color
+    $pdf->Rect(0, 0, 210, 35, 'F');
+    
+    // HirayaFit Logo/Title
+    $pdf->SetTextColor(255, 255, 255);
+    $pdf->SetFont('helvetica', 'B', 24);
+    $pdf->SetXY(15, 8);
+    $pdf->Cell(0, 10, 'HIRAYAFIT', 0, 1, 'L');
+    
+    $pdf->SetFont('helvetica', '', 12);
+    $pdf->SetXY(15, 18);
+    $pdf->Cell(0, 6, 'Stock History Report', 0, 1, 'L');
+    
+    // Date and time on the right
+    $pdf->SetFont('helvetica', '', 10);
+    $pdf->SetXY(140, 12);
+    $pdf->Cell(0, 6, 'Generated: ' . date('M d, Y H:i'), 0, 1, 'R');
+    
+    // Blue accent line
+    $pdf->SetFillColor(0, 113, 197); // Secondary color
+    $pdf->Rect(0, 35, 210, 3, 'F');
+    
+    // Reset text color and position
+    $pdf->SetTextColor(17, 17, 17);
+    $pdf->SetY(45);
+    
+    // Main content
+    $pdf->SetFont('helvetica', 'B', 16);
+    $pdf->Cell(0, 10, 'Stock Movement History', 0, 1, 'C');
+    $pdf->SetY($pdf->GetY() + 5);
+    
+    // Create HTML table for history
+    $html = '<table border="0" cellpadding="6" cellspacing="0" style="width: 100%; border-collapse: collapse; font-size: 9px;">';
+    $html .= '<thead>';
+    $html .= '<tr style="background-color: ' . HIRAYAFIT_PRIMARY . '; color: white;">';
+    $html .= '<th width="12%" style="padding: 8px; border: 1px solid #ddd;">Date & Time</th>';
+    $html .= '<th width="8%" style="padding: 8px; border: 1px solid #ddd;">Product ID</th>';
+    $html .= '<th width="25%" style="padding: 8px; border: 1px solid #ddd;">Product Name</th>';
+    $html .= '<th width="8%" style="padding: 8px; border: 1px solid #ddd;">Old Stock</th>';
+    $html .= '<th width="8%" style="padding: 8px; border: 1px solid #ddd;">New Stock</th>';
+    $html .= '<th width="8%" style="padding: 8px; border: 1px solid #ddd;">Change</th>';
+    $html .= '<th width="18%" style="padding: 8px; border: 1px solid #ddd;">Reason</th>';
+    $html .= '<th width="13%" style="padding: 8px; border: 1px solid #ddd;">Admin</th>';
+    $html .= '</tr>';
+    $html .= '</thead>';
+    $html .= '<tbody>';
+    
+    // Add data rows
+    if (isset($xml->stock_history)) {
+        $rowCount = 0;
+        foreach ($xml->stock_history->entry as $entry) {
+            $change = (int)$entry->change;
+            $changeColor = $change > 0 ? '#28a745' : HIRAYAFIT_DANGER;
+            $changeText = $change > 0 ? '+' . $change : (string)$change;
+            $changeIcon = $change > 0 ? '↗' : '↘';
+            
+            $rowBg = ($rowCount % 2 == 0) ? '#ffffff' : '#f8f9fa';
+            $rowCount++;
+            
+            $html .= '<tr style="background-color: ' . $rowBg . ';">';
+            $html .= '<td style="padding: 6px; border: 1px solid #ddd; font-size: 8px;">' . date('M j, Y H:i', strtotime((string)$entry->date)) . '</td>';
+            $html .= '<td style="padding: 6px; border: 1px solid #ddd; text-align: center; color: ' . HIRAYAFIT_SECONDARY . '; font-weight: bold;">' . htmlspecialchars((string)$entry->product_id) . '</td>';
+            $html .= '<td style="padding: 6px; border: 1px solid #ddd;">' . htmlspecialchars((string)$entry->product_name) . '</td>';
+            $html .= '<td style="padding: 6px; border: 1px solid #ddd; text-align: center;">' . htmlspecialchars((string)$entry->old_stock) . '</td>';
+            $html .= '<td style="padding: 6px; border: 1px solid #ddd; text-align: center; font-weight: bold;">' . htmlspecialchars((string)$entry->new_stock) . '</td>';
+            $html .= '<td style="padding: 6px; border: 1px solid #ddd; text-align: center; color: ' . $changeColor . '; font-weight: bold;">' . $changeIcon . ' ' . $changeText . '</td>';
+            $html .= '<td style="padding: 6px; border: 1px solid #ddd; font-size: 8px;">' . htmlspecialchars((string)$entry->reason) . '</td>';
+            $html .= '<td style="padding: 6px; border: 1px solid #ddd; color: ' . HIRAYAFIT_GREY . ';">' . htmlspecialchars((string)$entry->admin_name) . '</td>';
+            $html .= '</tr>';
+        }
+    } else {
+        $html .= '<tr><td colspan="8" style="text-align: center; color: ' . HIRAYAFIT_GREY . '; padding: 20px; font-style: italic;">No stock history records found</td></tr>';
+    }
+    
+    $html .= '</tbody>';
+    $html .= '</table>';
+    
+    // Print HTML content
+    $pdf->writeHTML($html, true, false, true, false, '');
+    
+    // Custom footer
+    $pdf->SetY(-20);
+    $pdf->SetFillColor(229, 229, 229);
+    $pdf->Rect(0, -20, 210, 20, 'F');
+    $pdf->SetTextColor(118, 118, 118);
+    $pdf->SetFont('helvetica', '', 8);
+    $pdf->Cell(0, 10, 'HirayaFit Stock Management System | Generated on ' . date('F j, Y \a\t g:i A'), 0, 0, 'C');
+    
+    // Output PDF
+    $pdf->Output('hirayafit_stock_history_' . date('Y-m-d') . '.pdf', 'D');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1444,12 +1701,10 @@ table tbody tr:hover {
                 <div class="controls-header">
                     <h3 class="controls-title">Stock Management Controls</h3>
                     <div class="export-buttons">
-                        <a href="?export=csv" class="btn btn-success">
+                        <a href="?export=pdf" class="btn btn-success">
                             <i class="fas fa-file-csv"></i> Export Stock Report
                         </a>
-                        <a href="?export=history" class="btn btn-primary">
-                            <i class="fas fa-history"></i> Export Stock History
-                        </a>
+                        
                     </div>
                 </div>
 

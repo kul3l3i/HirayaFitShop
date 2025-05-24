@@ -2,64 +2,6 @@
 <transactions>
 
 
-    <transaction>
-        <transaction_id>TRX-683014A91A92D</transaction_id>
-        <user_id>2</user_id>
-        <transaction_date>2025-05-23 08:24:41</transaction_date>
-        <status>delivered</status>
-        <payment_method>gcash</payment_method>
-        <subtotal>1500</subtotal>
-        <shipping_fee>100</shipping_fee>
-        <total_amount>1600</total_amount>
-        <items>
-            <item>
-                <product_id>2006</product_id>
-                <product_name>Women's High-Waist Leggings</product_name>
-                <price>1500</price>
-                <quantity>1</quantity>
-                <color>black</color>
-                <size>S</size>
-                <subtotal>1500</subtotal>
-            </item>
-        </items>
-        <shipping_info>
-            <fullname>Lai Rodriguez</fullname>
-            <email>rodriguez.elx@gmail.com</email>
-            <phone>9633945919</phone>
-            <address>Caingin San Rafael Bulacan</address>
-            <city>San Rafael</city>
-            <postal_code>3008</postal_code>
-            <notes>malapit sa bahay</notes>
-        </shipping_info>
-    </transaction>
-    <transaction>
-        <transaction_id>TRX-683028D4DD3AD</transaction_id>
-        <user_id>2</user_id>
-        <transaction_date>2025-05-23 09:50:44</transaction_date>
-        <status>delivered</status>
-        <payment_method>cod</payment_method>
-        <subtotal>1200</subtotal>
-        <shipping_fee>100</shipping_fee>
-        <total_amount>1300</total_amount>
-        <items>
-            <item>
-                <product_id>2001</product_id>
-                <product_name>Men's Compression Shirt</product_name>
-                <price>1200</price>
-                <quantity>1</quantity>
-                <color>Black</color>
-                <size>S</size>
-                <subtotal>1200</subtotal>
-            </item>
-        </items>
-        <shipping_info>
-            <fullname>Lai Rodriguez</fullname>
-            <email>rodriguez.elx@gmail.com</email>
-            <phone>9633945919</phone>
-            <address>Caingin San Rafael Bulacan</address>
-            <city>San Rafael</city>
-            <postal_code>3008</postal_code>
-            <notes>fsdgsdgfsgsdg</notes>
-        </shipping_info>
-    </transaction>
+    
+        
 </transactions>

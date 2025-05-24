@@ -46,3 +46,60 @@ INSERT INTO admins (username, password, fullname, email, role)
 VALUES ('admin', '$2y$10$XU0j7UDiD69jZc/fDNQvKO7hwUAt2kgTCXNxKmDUkeaPmwRpcCgF.', 'HirayaFit Admin', 'leiumarsayco@gmail.com', 'super_admin');
 
 
+-- Messages table for communication between users and admins
+CREATE TABLE messages (
+    message_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    admin_id INT DEFAULT NULL,
+    subject VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    sender_type ENUM('user', 'admin') NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    is_resolved BOOLEAN DEFAULT FALSE,
+    priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
+    category ENUM('general', 'order_inquiry', 'product_inquiry', 'complaint', 'suggestion', 'technical_support') DEFAULT 'general',
+    parent_message_id INT DEFAULT NULL, -- For threaded conversations
+    attachment_path VARCHAR(255) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE SET NULL,
+    FOREIGN KEY (parent_message_id) REFERENCES messages(message_id) ON DELETE CASCADE,
+    
+    INDEX idx_user_messages (user_id, created_at),
+    INDEX idx_admin_messages (admin_id, created_at),
+    INDEX idx_unread_messages (is_read, created_at),
+    INDEX idx_thread_messages (parent_message_id, created_at)
+);
+
+-- Message status tracking table
+CREATE TABLE message_status (
+    status_id INT AUTO_INCREMENT PRIMARY KEY,
+    message_id INT NOT NULL,
+    admin_id INT DEFAULT NULL,
+    status ENUM('new', 'in_progress', 'pending_user', 'resolved', 'closed') DEFAULT 'new',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (message_id) REFERENCES messages(message_id) ON DELETE CASCADE,
+    FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE SET NULL,
+    
+    INDEX idx_message_status (message_id, created_at)
+);
+
+-- Quick responses/templates for admins
+CREATE TABLE quick_responses (
+    response_id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id INT NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    content TEXT NOT NULL,
+    category VARCHAR(50) DEFAULT 'general',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE CASCADE,
+    
+    INDEX idx_admin_responses (admin_id, category)
+);

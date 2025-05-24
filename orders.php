@@ -279,7 +279,6 @@ function getProgressValue($status) {
                         <a href="login.php"><i class="fas fa-user-circle"></i></a>
                     <?php endif; ?>
 
-                    <!--<a href="wishlist.php"><i class="fas fa-heart"></i></a>-->
                     <a href="cart.php" id="cartBtn">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" id="cartCount">
@@ -575,31 +574,35 @@ function getProgressValue($status) {
     <!-- Footer would go here -->
 
     <script>
-        // Toggle mobile menu
-        document.getElementById('mobileMenuToggle').addEventListener('click', function() {
-            document.getElementById('mainNav').classList.toggle('active');
-        });
+        // Account dropdown functionality
+        document.addEventListener('DOMContentLoaded', function () {
+            const accountBtn = document.getElementById('accountBtn');
+            const accountDropdown = document.getElementById('accountDropdown');
 
-        // Toggle account dropdown
-        const accountBtn = document.getElementById('accountBtn');
-        const accountDropdownContent = document.getElementById('accountDropdownContent');
-
-        if (accountBtn) {
-            accountBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                accountDropdownContent.classList.toggle('show');
-            });
+            if (accountBtn) {
+                accountBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    accountDropdown.classList.toggle('active');
+                });
+            }
 
             // Close dropdown when clicking outside
-            window.addEventListener('click', function(e) {
-                if (!e.target.matches('#accountBtn') && !e.target.closest('#accountDropdownContent')) {
-                    if (accountDropdownContent.classList.contains('show')) {
-                        accountDropdownContent.classList.remove('show');
-                    }
+            document.addEventListener('click', function (e) {
+                if (accountDropdown && !accountDropdown.contains(e.target) && e.target !== accountBtn) {
+                    accountDropdown.classList.remove('active');
                 }
             });
-        }
 
+            // Mobile menu toggle
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const mainNav = document.getElementById('mainNav');
+
+            if (mobileMenuToggle && mainNav) {
+                mobileMenuToggle.addEventListener('click', function () {
+                    mainNav.classList.toggle('active');
+                });
+            }
+        });
         // Search orders functionality
         const orderSearchInput = document.getElementById('orderSearchInput');
         const orderSearchBtn = document.getElementById('orderSearchBtn');

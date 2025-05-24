@@ -1,13 +1,12 @@
 <?php
 // Start the session at the very beginning
-// Start the session at the very beginning
 session_start();
+// Include your environment-aware database connection
 include 'db_connect.php';
+
 // Initialize variables
 $error = '';
 $username_email = '';
-
-
 
 // Check if the user is logged in
 if (!isset($_SESSION['admin_id'])) {
@@ -52,32 +51,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'delete_user':
                 $user_id = $_POST['user_id'];
                 $admin_password = $_POST['admin_password'];
-                
-                // FIX: Get user info BEFORE deletion
+                $admin_id = $_SESSION['admin_id']; // assumes admin is logged in
+            
+                // Get user info BEFORE deletion
                 $user_stmt = $conn->prepare("SELECT fullname, email FROM users WHERE id = ?");
                 $user_stmt->bind_param("i", $user_id);
                 $user_stmt->execute();
                 $user_info = $user_stmt->get_result()->fetch_assoc();
-                
+            
                 if (!$user_info) {
                     $message = "User not found.";
                     $messageType = 'error';
                     break;
                 }
-                
-                // Get admin data
+            
+                // Get admin hashed password
                 $password_verify = $conn->prepare("SELECT password FROM admins WHERE admin_id = ?");
                 $password_verify->bind_param("i", $admin_id);
                 $password_verify->execute();
                 $password_result = $password_verify->get_result();
                 $admin_data = $password_result->fetch_assoc();
-                
-                // Check password
-                if ($admin_password === "admin" && $admin_data['password'] === '$2y$10$someHashedPasswordHere') {
-                    // Delete the user (using the fullname we got earlier)
+            
+                if (!$admin_data) {
+                    $message = "Admin not found.";
+                    $messageType = 'error';
+                    break;
+                }
+            
+                // Compare hashed MD5
+                if (md5($admin_password) === $admin_data['password']) {
+                    // Delete the user
                     $delete_stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
                     $delete_stmt->bind_param("i", $user_id);
-                    
+            
                     if ($delete_stmt->execute()) {
                         $message = "User '{$user_info['fullname']}' has been successfully deleted.";
                         $messageType = 'success';
@@ -90,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $messageType = 'error';
                 }
                 break;
+
                 
             case 'activate_user':
                 $user_id = $_POST['user_id'];
@@ -172,6 +179,25 @@ if (!empty($final_params)) {
 $stmt->execute();
 $users_result = $stmt->get_result();
 
+// Get all users for PDF export (without pagination)
+$all_users_sql = "SELECT id, fullname, email, username, address, phone, profile_image, is_active, 
+                         created_at, updated_at, otp_purpose, otp_expires_at 
+                  FROM users 
+                  $where_clause 
+                  ORDER BY $sort $order";
+
+$all_users_stmt = $conn->prepare($all_users_sql);
+if (!empty($params)) {
+    $all_users_stmt->bind_param($types, ...$params);
+}
+$all_users_stmt->execute();
+$all_users_result = $all_users_stmt->get_result();
+
+$all_users = [];
+while ($user = $all_users_result->fetch_assoc()) {
+    $all_users[] = $user;
+}
+
 // Function to format date
 function formatDate($date) {
     return date('M d, Y h:i A', strtotime($date));
@@ -199,6 +225,9 @@ function getUserStatus($is_active, $otp_purpose, $otp_expires_at) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management - HirayaFit Admin</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- jsPDF Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
             --primary: #111111;
@@ -804,6 +833,28 @@ function getUserStatus($is_active, $otp_purpose, $otp_expires_at) {
         
         .filter-dropdown.show .filter-dropdown-content {
             display: block;
+        }
+
+        /* Export Button */
+        .export-btn {
+            background: linear-gradient(135deg, var(--success) 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
         }
         
         /* Table Styles */
@@ -1436,7 +1487,7 @@ function getUserStatus($is_active, $otp_purpose, $otp_expires_at) {
                         </div>
                         <a href="profile.php"><i class="fas fa-user"></i> Profile Settings</a>
                         <a href="change-password.php"><i class="fas fa-lock"></i> Change Password</a>
-                        <a href="?logout=true" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        <a href="logout.php" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     </div>
                 </div>
             </div>
@@ -1496,7 +1547,7 @@ function getUserStatus($is_active, $otp_purpose, $otp_expires_at) {
                     </div>
                 </div>
                 
-                <div class="stat-card">
+                <!--<div class="stat-card">
                     <div class="stat-card-header">
                         <div class="stat-card-title">Inactive Users</div>
                         <div class="stat-card-icon" style="background: linear-gradient(135deg, var(--danger) 0%, #c82333 100%);">
@@ -1507,8 +1558,7 @@ function getUserStatus($is_active, $otp_purpose, $otp_expires_at) {
                     <div class="stat-card-change">
                         <i class="fas fa-minus"></i> Deactivated accounts
                     </div>
-                </div>
-                
+                </div>-->
                 <div class="stat-card">
                     <div class="stat-card-header">
                         <div class="stat-card-title">New This Month</div>
@@ -1546,6 +1596,10 @@ function getUserStatus($is_active, $otp_purpose, $otp_expires_at) {
                                         <a href="?status=inactive<?php echo !empty($search) ? '&search='.urlencode($search) : ''; ?>">Inactive Users</a>
                                     </div>
                                 </div>
+
+                                <button onclick="exportUsersPDF()" class="export-btn">
+                                    <i class="fas fa-file-pdf"></i> Export PDF
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1776,6 +1830,15 @@ function getUserStatus($is_active, $otp_purpose, $otp_expires_at) {
     </div>
 
     <script>
+        // Store users data for PDF export
+        const allUsers = <?php echo json_encode($all_users); ?>;
+        const userStats = {
+            total: <?php echo $stats['total_users']; ?>,
+            active: <?php echo $stats['active_users']; ?>,
+            inactive: <?php echo $stats['inactive_users']; ?>,
+            newThisMonth: <?php echo $stats['new_users']; ?>
+        };
+
         // Toggle sidebar functionality
         document.getElementById('toggleSidebar').addEventListener('click', function() {
             document.querySelector('.sidebar').classList.toggle('active');
@@ -1872,46 +1935,169 @@ function getUserStatus($is_active, $otp_purpose, $otp_expires_at) {
             
             return { status: 'Active', class: 'status-active' };
         }
-        
-        // Auto-hide alerts after 5 seconds
-        document.addEventListener('DOMContentLoaded', function() {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
-                setTimeout(function() {
-                    alert.style.opacity = '0';
-                    alert.style.transform = 'translateY(-10px)';
-                    setTimeout(function() {
-                        alert.remove();
-                    }, 300);
-                }, 5000);
-            });
-        });
-        
-        // Close modals with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeUserDetailsModal();
-                closeDeleteModal();
-            }
-        });
-        
-        // Prevent modal close when clicking inside modal content
-        document.querySelectorAll('.modal-content').forEach(function(content) {
-            content.addEventListener('click', function(e) {
-                e.stopPropagation();
-            });
-        });
-        
-        // Close modal when clicking outside
-        document.querySelectorAll('.modal').forEach(function(modal) {
-            modal.addEventListener('click', function() {
-                if (this.id === 'userDetailsModal') {
-                    closeUserDetailsModal();
-                } else if (this.id === 'deleteModal') {
-                    closeDeleteModal();
+
+        // PDF Export Function
+        function exportUsersPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // HirayaFit brand colors (RGB values)
+    const primaryColor = [17, 17, 17];     // #111111
+    const secondaryColor = [0, 113, 197];  // #0071c5
+    const successColor = [40, 167, 69];    // #28a745
+    const dangerColor = [220, 53, 69];     // #dc3545
+    const warningColor = [255, 193, 7];    // #ffc107
+    const pendingColor = [253, 126, 20];   // #fd7e14
+    const greyColor = [118, 118, 118];     // #767676
+
+    // Header
+    doc.setFillColor(...primaryColor);
+    doc.rect(0, 0, 210, 35, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(28);
+    doc.setFont('helvetica', 'bold');
+    doc.text('HirayaFit', 20, 22);
+
+    // Subtitle
+    doc.setTextColor(...secondaryColor);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'normal');
+    doc.text('User Management Report', 20, 45);
+
+    // Section title
+    doc.setTextColor(...primaryColor);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('User Statistics Overview', 20, 65);
+
+    // Stat cards (3 columns)
+    let yPos = 75;
+    let cardWidth = 60;
+    let cardHeight = 25;
+    let cardGap = 15;
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+
+    // Total Users
+    doc.setFillColor(...secondaryColor);
+    doc.rect(20, yPos, cardWidth, cardHeight, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL USERS', 22, yPos + 10);
+    doc.setFontSize(16);
+    doc.text(userStats.total.toString(), 22, yPos + 20);
+
+    // Active Users
+    doc.setFillColor(...successColor);
+    doc.rect(20 + cardWidth + cardGap, yPos, cardWidth, cardHeight, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ACTIVE USERS', 22 + cardWidth + cardGap, yPos + 10);
+    doc.setFontSize(16);
+    doc.text(userStats.active.toString(), 22 + cardWidth + cardGap, yPos + 20);
+
+    // New This Month
+    doc.setFillColor(...pendingColor);
+    doc.rect(20 + 2 * (cardWidth + cardGap), yPos, cardWidth, cardHeight, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('NEW', 22 + 2 * (cardWidth + cardGap), yPos + 10);
+    doc.setFontSize(16);
+    doc.text(userStats.newThisMonth.toString(), 22 + 2 * (cardWidth + cardGap), yPos + 20);
+
+    yPos += 40;
+
+    // User Directory
+    doc.setTextColor(...primaryColor);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('User Directory', 20, yPos);
+    yPos += 10;
+
+    const tableData = allUsers.map(user => {
+        const userStatus = getUserStatusFromData(user.is_active, user.otp_purpose, user.otp_expires_at);
+        return [
+            '#' + user.id,
+            user.fullname,
+            user.email,
+            '@' + user.username,
+            user.phone || 'Not provided',
+            new Date(user.created_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: '2-digit'
+            }),
+            userStatus.status
+        ];
+    });
+
+    doc.autoTable({
+        startY: yPos,
+        head: [['ID', 'Full Name', 'Email', 'Username', 'Phone', 'Join Date', 'Status']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: {
+            fillColor: primaryColor,
+            textColor: [255, 255, 255],
+            fontSize: 9,
+            fontStyle: 'bold'
+        },
+        bodyStyles: {
+            fontSize: 8,
+            textColor: primaryColor
+        },
+        alternateRowStyles: {
+            fillColor: [248, 249, 250]
+        },
+        margin: { left: 20, right: 20 },
+        columnStyles: {
+            0: { cellWidth: 15 },
+            1: { cellWidth: 35 },
+            2: { cellWidth: 45 },
+            3: { cellWidth: 25 },
+            4: { cellWidth: 25 },
+            5: { cellWidth: 25 },
+            6: { cellWidth: 20 }
+        },
+        didParseCell: function (data) {
+            if (data.column.index === 6) {
+                const status = data.cell.text[0];
+                if (status === 'Active') {
+                    data.cell.styles.textColor = successColor;
+                    data.cell.styles.fontStyle = 'bold';
+                } else if (status === 'Inactive') {
+                    data.cell.styles.textColor = dangerColor;
+                    data.cell.styles.fontStyle = 'bold';
+                } else if (status === 'Pending Verification') {
+                    data.cell.styles.textColor = pendingColor;
+                    data.cell.styles.fontStyle = 'bold';
                 }
-            });
-        });
+            }
+        }
+    });
+
+    // Summary footer bar (updated: no inactive)
+    const finalY = doc.lastAutoTable.finalY + 15;
+    doc.setFillColor(...secondaryColor);
+    doc.rect(15, finalY - 2, 180, 12, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text(`TOTAL USERS: ${userStats.total} | ACTIVE: ${userStats.active}`, 20, finalY + 5);
+
+    // Footer text
+    doc.setTextColor(...greyColor);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('HirayaFit User Management Report', 20, 280);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 285);
+
+    // Save the PDF
+    doc.save(`HirayaFit_Users_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+}
     </script>
 </body>
 </html>

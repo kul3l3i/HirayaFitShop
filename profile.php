@@ -808,7 +808,7 @@ $conn->close();
                             <div class="account-links">
                                 <a href="profile.php"><i class="fas fa-user-circle"></i> My Profile</a>
                                 <a href="orders.php"><i class="fas fa-box"></i> My Orders</a>
-                                <a href="wishlist.php"><i class="fas fa-heart"></i> My Wishlist</a>
+                             
                                 <a href="settings.php"><i class="fas fa-cog"></i> Account Settings</a>
                                 <div class="sign-out-btn">
                                     <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Sign Out</a>

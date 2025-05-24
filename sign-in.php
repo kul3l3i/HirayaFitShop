@@ -1,7 +1,22 @@
 <?php
 // Start session
+
+
+
 session_start();
+
+// Include your environment-aware database connection
 include 'db_connect.php';
+
+// Initialize variables
+$error = '';
+$username_email = '';
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
 // Initialize variables
 $error = '';
 $username_email = '';
@@ -728,10 +743,10 @@ if (isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])) {
                             <a href="sign-in.php"><i class="fas fa-sign-in-alt"></i> Sign In</a>
                             <a href="sign-up.php"><i class="fas fa-user-plus"></i> Sign Up</a>
                             <a href="#orders"><i class="fas fa-box"></i> Track Orders</a>
-           
+                            <a href="#wishlist"><i class="fas fa-heart"></i> My Wishlist</a>
                         </div>
                     </div>
-                   <!-- <a href="#"><i class="fas fa-heart"></i></a>-->
+                    <a href="#"><i class="fas fa-heart"></i></a>
                     <a href="#" id="cartBtn">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" id="cartCount">0</span>
@@ -747,7 +762,7 @@ if (isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])) {
     
     <!-- Simplified Navigation -->
     <nav class="main-nav" id="mainNav">
-        <a href="index.php" class="active">HOME</a>  
+        <a href="in.php" class="active">HOME</a>  
         <a href="about.php">ABOUT</a>
         <a href="contact.php">CONTACT</a>
     </nav>
