@@ -1,10 +1,11 @@
 <?php
-// Include your environment-aware database connection
+session_start();
 include 'db_connect.php';
 
 // Initialize variables
-$error = '';
-$username_email = '';
+$success_message = '';
+$error_message = '';
+
 // Check if the user is logged in
 if (!isset($_SESSION['admin_id'])) {
     header("Location: sign-in.php");

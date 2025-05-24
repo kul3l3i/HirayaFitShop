@@ -1485,8 +1485,8 @@ function getUserStatus($is_active, $otp_purpose, $otp_expires_at) {
                                 <span class="admin-dropdown-role"><?php echo htmlspecialchars($admin['role']); ?></span>
                             </div>
                         </div>
-                        <a href="profile.php"><i class="fas fa-user"></i> Profile Settings</a>
-                        <a href="change-password.php"><i class="fas fa-lock"></i> Change Password</a>
+                        <a href="profileAdmin.php"><i class="fas fa-user"></i> Profile Settings</a>
+                        
                         <a href="logout.php" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     </div>
                 </div>
