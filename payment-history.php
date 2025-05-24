@@ -1077,7 +1077,7 @@ function getPaymentMethodIcon($method) {
             </div>
             
             <div class="navbar-actions">
-                !<--<a href="notifications.php" class="nav-link">
+                <!--<a href="notifications.php" class="nav-link">
                     <i class="fas fa-bell"></i>
                     <span class="notification-count">3</span>-->
                 </a>

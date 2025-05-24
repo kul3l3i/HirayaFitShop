@@ -1455,7 +1455,7 @@ function getUserStatus($is_active, $otp_purpose, $otp_expires_at) {
             </div>
             
             <div class="navbar-actions">
-                !<--<a href="notifications.php" class="nav-link">
+                <!--<a href="notifications.php" class="nav-link">
                     <i class="fas fa-bell"></i>
                     <span class="notification-count">3</span>-->
                 </a>
