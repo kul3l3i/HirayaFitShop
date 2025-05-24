@@ -1088,12 +1088,12 @@
                 <div class="footer-column">
                     <h3>Customer Service</h3>
                     <ul class="footer-links">
-                        <li><a href="contact.html">Contact Us</a></li>
-                        <li><a href="faqs.html">FAQs</a></li>
-                        <li><a href="shipping.html">Shipping & Returns</a></li>
-                        <li><a href="size-guide.html">Size Guide</a></li>
-                        <li><a href="privacy.html">Privacy Policy</a></li>
-                        <li><a href="terms.html">Terms & Conditions</a></li>
+                        <li><a href="contact.php">Contact Us</a></li>
+                        <li><a href="#">FAQs</a></li>
+                        <li><a href="#">Shipping & Returns</a></li>
+                        <li><a href="#">Size Guide</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms & Conditions</a></li>
                     </ul>
                 </div>
                 
