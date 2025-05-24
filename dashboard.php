@@ -12,6 +12,11 @@ if (!isset($_SESSION['admin_id'])) {
     header("Location: sign-in.php");
     exit;
 }
+// Initialize variables
+$error = '';
+$success = '';
+$conversations = []; // Initialize as empty array
+$unreadCount = 0; // Initialize as 0
 
 // Get admin information from the database
 $admin_id = $_SESSION['admin_id'];
@@ -821,7 +826,7 @@ $cityCounts = array_count_values(array_column($transactions, 'city'));
             
             <div class="menu-title">REPORTS & SETTINGS</div>
             <a href="reports.php"><i class="fas fa-file-pdf"></i> Reports & Analytics</a>
-            <a href="settings.php"><i class="fas fa-cog"></i> System Settings</a>
+            <!--<a href="settings.php"><i class="fas fa-cog"></i> System Settings</a>-->
         </div>
     </aside>
 
@@ -836,15 +841,16 @@ $cityCounts = array_count_values(array_column($transactions, 'city'));
             </div>
             
             <div class="navbar-actions">
-                <a href="notifications.php" class="nav-link">
+                !<--<a href="notifications.php" class="nav-link">
                     <i class="fas fa-bell"></i>
-                    <span class="notification-count">3</span>
+                    <span class="notification-count">3</span>-->
                 </a>
                 <a href="messages.php" class="nav-link">
                     <i class="fas fa-envelope"></i>
-                    <span class="notification-count">5</span>
+                    <?php if ($unreadCount > 0): ?>
+                        <span class="notification-count"><?php echo $unreadCount; ?></span>
+                    <?php endif; ?>
                 </a>
-                
                 <div class="admin-dropdown" id="adminDropdown">
                     <div class="admin-profile">
                         <div class="admin-avatar-container">

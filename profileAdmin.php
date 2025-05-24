@@ -719,9 +719,9 @@ $stmt->close();
             </div>
             
             <div class="navbar-actions">
-                <a href="notifications.php" class="nav-link">
+                !<--<a href="notifications.php" class="nav-link">
                     <i class="fas fa-bell"></i>
-                    <span class="notification-count">3</span>
+                    <span class="notification-count">3</span>-->
                 </a>
                 <a href="messages.php" class="nav-link">
                     <i class="fas fa-envelope"></i>

@@ -906,7 +906,7 @@ $stmt->close();
 
             <div class="menu-title">REPORTS & SETTINGS</div>
             <a href="reports.php" class="active"><i class="fas fa-file-pdf"></i> Reports & Analytics</a>
-            <a href="settings.php"><i class="fas fa-cog"></i> System Settings</a>
+            <!--<a href="settings.php"><i class="fas fa-cog"></i> System Settings</a>-->
         </div>
     </aside>
 
@@ -921,9 +921,9 @@ $stmt->close();
             </div>
 
             <div class="navbar-actions">
-                <a href="notifications.php" class="nav-link">
+                !<--<a href="notifications.php" class="nav-link">
                     <i class="fas fa-bell"></i>
-                    <span class="notification-count">3</span>
+                    <span class="notification-count">3</span>-->
                 </a>
                 <a href="messages.php" class="nav-link">
                     <i class="fas fa-envelope"></i>
