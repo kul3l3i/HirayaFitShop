@@ -1,11 +1,20 @@
 <?php
 // Start the session at the very beginning
 session_start();
-include 'db_connect.php';
-// Initialize variables
-$error = '';
-$username_email = '';
 
+// Database connection configuration
+$db_host = 'localhost';
+$db_user = 'root'; // Change to your DB username
+$db_pass = '';     // Change to your DB password
+$db_name = 'hirayafitdb'; // Change to your DB name
+
+// Create database connection
+$conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
 
 // Check if the user is logged in
 if (!isset($_SESSION['admin_id'])) {
@@ -1161,7 +1170,7 @@ form:not(.search-form) button:hover {
             
             <div class="menu-title">REPORTS & SETTINGS</div>
             <a href="reports.php"><i class="fas fa-file-pdf"></i> Reports & Analytics</a>
-            <!--<a href="settings.php"><i class="fas fa-cog"></i> System Settings</a>-->
+            <a href="settings.php"><i class="fas fa-cog"></i> System Settings</a>
         </div>
     </aside>
 
@@ -1176,9 +1185,9 @@ form:not(.search-form) button:hover {
             </div>
             
             <div class="navbar-actions">
-                <!--<a href="notifications.php" class="nav-link">
+                <a href="notifications.php" class="nav-link">
                     <i class="fas fa-bell"></i>
-                    <span class="notification-count">3</span>-->
+                    <span class="notification-count">3</span>
                 </a>
                 <a href="messages.php" class="nav-link">
                     <i class="fas fa-envelope"></i>
@@ -1210,8 +1219,8 @@ form:not(.search-form) button:hover {
                             <h4 class="admin-dropdown-user-name"><?php echo htmlspecialchars($admin['fullname']); ?></h4>
                             <p class="admin-dropdown-user-email"><?php echo htmlspecialchars($admin['email']); ?></p>
                         </div>
-                        <a href="profileAdmin.php"><i class="fas fa-user"></i> Profile Settings</a>
-                       
+                        <a href="profile.php"><i class="fas fa-user"></i> Profile Settings</a>
+                        <a href="change-password.php"><i class="fas fa-lock"></i> Change Password</a>
                         <a href="logout.php" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     </div>
                 </div>
@@ -1415,12 +1424,13 @@ form:not(.search-form) button:hover {
 <?php if (!empty($message)) echo $message; ?>
 
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Admin dropdown toggle
-        const adminDropdown = document.getElementById('adminDropdown');
-        const adminDropdownContent = document.getElementById('adminDropdownContent');
-        
+    <script>
+   document.addEventListener('DOMContentLoaded', function() {
+    // Admin dropdown toggle
+    const adminDropdown = document.getElementById('adminDropdown');
+    const adminDropdownContent = document.getElementById('adminDropdownContent');
+    
+    if (adminDropdown) {
         adminDropdown.addEventListener('click', function(e) {
             e.stopPropagation();
             adminDropdown.classList.toggle('show');
@@ -1428,27 +1438,28 @@ form:not(.search-form) button:hover {
         
         // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {
-            if (!adminDropdown.contains(e.target)) {
+            if (adminDropdown && !adminDropdown.contains(e.target)) {
                 adminDropdown.classList.remove('show');
             }
         });
-        
-        // Sidebar toggle for responsive design
-        const toggleSidebar = document.getElementById('toggleSidebar');
-        const sidebarClose = document.getElementById('sidebarClose');
-        const sidebar = document.querySelector('.sidebar');
-        
+    }
+    
+    // Sidebar toggle for responsive design
+    const toggleSidebar = document.getElementById('toggleSidebar');
+    const sidebarClose = document.getElementById('sidebarClose');
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (toggleSidebar && sidebar) {
         toggleSidebar.addEventListener('click', function() {
             sidebar.classList.toggle('active');
         });
         
-        sidebarClose.addEventListener('click', function() {
-            sidebar.classList.remove('active');
-        });
-    });
-    </script>
-    <script>
-  
+        if (sidebarClose) {
+            sidebarClose.addEventListener('click', function() {
+                sidebar.classList.remove('active');
+            });
+        }
+    }
     
     // Modal functionality
     const productModal = document.getElementById('productModal');
@@ -1587,6 +1598,5 @@ form:not(.search-form) button:hover {
     }
 });
     </script>
-    
 </body>
 </html>
