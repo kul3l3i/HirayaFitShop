@@ -45,6 +45,7 @@ CREATE TABLE admins (
 INSERT INTO admins (username, password, fullname, email, role)
 VALUES ('admin', '$2y$10$XU0j7UDiD69jZc/fDNQvKO7hwUAt2kgTCXNxKmDUkeaPmwRpcCgF.', 'HirayaFit Admin', 'leiumarsayco@gmail.com', 'super_admin');
 
+
 -- Messages table to store conversations between users and admins
 CREATE TABLE messages (
     id INT AUTO_INCREMENT PRIMARY KEY,
