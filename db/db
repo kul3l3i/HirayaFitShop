@@ -45,61 +45,120 @@ CREATE TABLE admins (
 INSERT INTO admins (username, password, fullname, email, role)
 VALUES ('admin', '$2y$10$XU0j7UDiD69jZc/fDNQvKO7hwUAt2kgTCXNxKmDUkeaPmwRpcCgF.', 'HirayaFit Admin', 'leiumarsayco@gmail.com', 'super_admin');
 
-
--- Messages table for communication between users and admins
+-- Messages table to store conversations between users and admins
 CREATE TABLE messages (
-    message_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    admin_id INT DEFAULT NULL,
-    subject VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     sender_type ENUM('user', 'admin') NOT NULL,
+    sender_id INT NOT NULL,
+    receiver_type ENUM('user', 'admin') NOT NULL,
+    receiver_id INT NOT NULL,
+    subject VARCHAR(255) DEFAULT NULL,
+    message TEXT NOT NULL,
     is_read BOOLEAN DEFAULT FALSE,
-    is_resolved BOOLEAN DEFAULT FALSE,
-    priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
-    category ENUM('general', 'order_inquiry', 'product_inquiry', 'complaint', 'suggestion', 'technical_support') DEFAULT 'general',
-    parent_message_id INT DEFAULT NULL, -- For threaded conversations
-    attachment_path VARCHAR(255) DEFAULT NULL,
+    message_type ENUM('general', 'support', 'order_inquiry', 'complaint') DEFAULT 'general',
+    parent_message_id INT DEFAULT NULL, -- For threading/replies
+    attachment_path VARCHAR(500) DEFAULT NULL,
+    priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+    status ENUM('active', 'archived', 'deleted') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
+    -- Indexes for better performance
+    INDEX idx_sender (sender_type, sender_id),
+    INDEX idx_receiver (receiver_type, receiver_id),
+    INDEX idx_conversation (sender_type, sender_id, receiver_type, receiver_id),
+    INDEX idx_unread (is_read, receiver_type, receiver_id),
+    INDEX idx_parent (parent_message_id),
+    INDEX idx_created (created_at),
+    
+    -- Foreign key constraints
+    FOREIGN KEY (parent_message_id) REFERENCES messages(id) ON DELETE SET NULL
+);
+
+-- Conversations table to track ongoing conversations
+CREATE TABLE conversations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    admin_id INT DEFAULT NULL, -- NULL if not yet assigned to an admin
+    subject VARCHAR(255) NOT NULL,
+    status ENUM('open', 'in_progress', 'resolved', 'closed') DEFAULT 'open',
+    priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+    category ENUM('general', 'support', 'order_inquiry', 'complaint', 'feedback') DEFAULT 'general',
+    last_message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- Indexes
+    INDEX idx_user (user_id),
+    INDEX idx_admin (admin_id),
+    INDEX idx_status (status),
+    INDEX idx_priority (priority),
+    INDEX idx_last_message (last_message_at),
+    
+    -- Foreign key constraints
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE SET NULL,
-    FOREIGN KEY (parent_message_id) REFERENCES messages(message_id) ON DELETE CASCADE,
-    
-    INDEX idx_user_messages (user_id, created_at),
-    INDEX idx_admin_messages (admin_id, created_at),
-    INDEX idx_unread_messages (is_read, created_at),
-    INDEX idx_thread_messages (parent_message_id, created_at)
+    FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE SET NULL
 );
 
--- Message status tracking table
-CREATE TABLE message_status (
-    status_id INT AUTO_INCREMENT PRIMARY KEY,
-    message_id INT NOT NULL,
-    admin_id INT DEFAULT NULL,
-    status ENUM('new', 'in_progress', 'pending_user', 'resolved', 'closed') DEFAULT 'new',
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (message_id) REFERENCES messages(message_id) ON DELETE CASCADE,
-    FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE SET NULL,
-    
-    INDEX idx_message_status (message_id, created_at)
-);
-
--- Quick responses/templates for admins
-CREATE TABLE quick_responses (
-    response_id INT AUTO_INCREMENT PRIMARY KEY,
-    admin_id INT NOT NULL,
-    title VARCHAR(100) NOT NULL,
-    content TEXT NOT NULL,
-    category VARCHAR(50) DEFAULT 'general',
+-- Message participants table for group messaging (future expansion)
+CREATE TABLE message_participants (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    conversation_id INT NOT NULL,
+    participant_type ENUM('user', 'admin') NOT NULL,
+    participant_id INT NOT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    left_at TIMESTAMP NULL,
     is_active BOOLEAN DEFAULT TRUE,
+    
+    -- Indexes
+    INDEX idx_conversation (conversation_id),
+    INDEX idx_participant (participant_type, participant_id),
+    
+    -- Foreign key constraints
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+    
+    -- Unique constraint to prevent duplicate participants
+    UNIQUE KEY unique_participant (conversation_id, participant_type, participant_id)
+);
+
+-- Message read status table for detailed tracking
+CREATE TABLE message_read_status (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    message_id INT NOT NULL,
+    reader_type ENUM('user', 'admin') NOT NULL,
+    reader_id INT NOT NULL,
+    read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Indexes
+    INDEX idx_message (message_id),
+    INDEX idx_reader (reader_type, reader_id),
+    
+    -- Foreign key constraints
+    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
+    
+    -- Unique constraint to prevent duplicate read records
+    UNIQUE KEY unique_read (message_id, reader_type, reader_id)
+);
+
+-- Notification preferences table
+CREATE TABLE notification_preferences (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_type ENUM('user', 'admin') NOT NULL,
+    user_id INT NOT NULL,
+    email_notifications BOOLEAN DEFAULT TRUE,
+    push_notifications BOOLEAN DEFAULT TRUE,
+    sms_notifications BOOLEAN DEFAULT FALSE,
+    notification_frequency ENUM('immediate', 'hourly', 'daily') DEFAULT 'immediate',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
-    FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE CASCADE,
-    
-    INDEX idx_admin_responses (admin_id, category)
+    -- Unique constraint
+    UNIQUE KEY unique_user_prefs (user_type, user_id)
 );
+
+-- Insert default notification preferences for existing users
+INSERT INTO notification_preferences (user_type, user_id, email_notifications, push_notifications)
+SELECT 'user', id, TRUE, TRUE FROM users;
+
+INSERT INTO notification_preferences (user_type, user_id, email_notifications, push_notifications)
+SELECT 'admin', admin_id, TRUE, TRUE FROM admins;
