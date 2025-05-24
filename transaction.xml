@@ -36,7 +36,7 @@
         <transaction_id>TRX-683028D4DD3AD</transaction_id>
         <user_id>2</user_id>
         <transaction_date>2025-05-23 09:50:44</transaction_date>
-        <status>processing</status>
+        <status>delivered</status>
         <payment_method>cod</payment_method>
         <subtotal>1200</subtotal>
         <shipping_fee>100</shipping_fee>

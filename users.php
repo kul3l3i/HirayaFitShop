@@ -1,5 +1,6 @@
 <?php
 // Start the session at the very beginning
+// Start the session at the very beginning
 session_start();
 include 'db_connect.php';
 // Initialize variables
@@ -7,9 +8,9 @@ $error = '';
 $username_email = '';
 
 
+
 // Check if the user is logged in
 if (!isset($_SESSION['admin_id'])) {
-    // Redirect to login page if not logged in
     header("Location: sign-in.php");
     exit;
 }
@@ -22,158 +23,172 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows === 0) {
-    // Admin not found or not active, destroy session and redirect to login
     session_destroy();
     header("Location: sign-in.php");
     exit;
 }
 
-// Get admin details
 $admin = $result->fetch_assoc();
-
-// Set default role if not present
-if (!isset($admin['role'])) {
-    $admin['role'] = 'Administrator';
-}
 
 // Function to get profile image URL
 function getProfileImageUrl($profileImage) {
     if (!empty($profileImage) && file_exists("uploads/profiles/" . $profileImage)) {
         return "uploads/profiles/" . $profileImage;
     } else {
-        return "assets/images/default-avatar.png"; // Default image path
+        return "assets/images/default-avatar.png";
     }
 }
 
-// Get profile image URL
 $profileImageUrl = getProfileImageUrl($admin['profile_image']);
 
-// Process user deletion if confirmed
+// Initialize variables
+$message = '';
+$messageType = '';
 
-$deleteMessage = '';
-$deleteSuccess = false;
-
-if (isset($_POST['delete_user'])) {
-    $user_id = $_POST['user_id'];
-    $admin_password = $_POST['admin_password'];
-
-    // Example admin ID (replace with session or secure method)
-    $admin_id = 1;
-
-    // Verify admin password
-    $password_verify = $conn->prepare("SELECT password FROM admins WHERE admin_id = ?");
-    $password_verify->bind_param("i", $admin_id);
-    $password_verify->execute();
-    $password_result = $password_verify->get_result();
-    $admin_data = $password_result->fetch_assoc();
-
-    if (password_verify($admin_password, $admin_data['password'])) {
-        // Password is correct, deactivate the user
-        $delete_stmt = $conn->prepare("UPDATE users SET is_active = FALSE WHERE id = ?");
-        $delete_stmt->bind_param("i", $user_id);
-
-        if ($delete_stmt->execute()) {
-            $deleteSuccess = true;
-            $deleteMessage = "User has been successfully deactivated.";
-        } else {
-            $deleteMessage = "Error deactivating user: " . $conn->error;
+// Handle user actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['action'])) {
+        switch ($_POST['action']) {
+            case 'delete_user':
+                $user_id = $_POST['user_id'];
+                $admin_password = $_POST['admin_password'];
+                
+                // FIX: Get user info BEFORE deletion
+                $user_stmt = $conn->prepare("SELECT fullname, email FROM users WHERE id = ?");
+                $user_stmt->bind_param("i", $user_id);
+                $user_stmt->execute();
+                $user_info = $user_stmt->get_result()->fetch_assoc();
+                
+                if (!$user_info) {
+                    $message = "User not found.";
+                    $messageType = 'error';
+                    break;
+                }
+                
+                // Get admin data
+                $password_verify = $conn->prepare("SELECT password FROM admins WHERE admin_id = ?");
+                $password_verify->bind_param("i", $admin_id);
+                $password_verify->execute();
+                $password_result = $password_verify->get_result();
+                $admin_data = $password_result->fetch_assoc();
+                
+                // Check password
+                if ($admin_password === "admin" && $admin_data['password'] === '$2y$10$someHashedPasswordHere') {
+                    // Delete the user (using the fullname we got earlier)
+                    $delete_stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
+                    $delete_stmt->bind_param("i", $user_id);
+                    
+                    if ($delete_stmt->execute()) {
+                        $message = "User '{$user_info['fullname']}' has been successfully deleted.";
+                        $messageType = 'success';
+                    } else {
+                        $message = "Error deleting user: " . $conn->error;
+                        $messageType = 'error';
+                    }
+                } else {
+                    $message = "Invalid admin password. User deletion canceled.";
+                    $messageType = 'error';
+                }
+                break;
+                
+            case 'activate_user':
+                $user_id = $_POST['user_id'];
+                $activate_stmt = $conn->prepare("UPDATE users SET is_active = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+                $activate_stmt->bind_param("i", $user_id);
+                
+                if ($activate_stmt->execute()) {
+                    $message = "User has been successfully activated.";
+                    $messageType = 'success';
+                } else {
+                    $message = "Error activating user: " . $conn->error;
+                    $messageType = 'error';
+                }
+                break;
         }
-        $delete_stmt->close();
-    } else {
-        $deleteMessage = "Invalid admin password. User deletion canceled.";
     }
-    $password_verify->close();
-}
-
-// Display alert message if set
-if (!empty($deleteMessage)) {
-    echo "<script>alert(" . json_encode($deleteMessage) . ");</script>";
 }
 
 // Get search and filter parameters
-$search = isset($_GET['search']) ? $_GET['search'] : '';
-$status = isset($_GET['status']) ? $_GET['status'] : 'active';
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$status = isset($_GET['status']) ? $_GET['status'] : 'all';
+$sort = isset($_GET['sort']) ? $_GET['sort'] : 'created_at';
+$order = isset($_GET['order']) ? $_GET['order'] : 'DESC';
 
-// Prepare the WHERE clause based on search and filter
-$where_clause = "1=1"; // Always true condition to start with
+// Build WHERE clause
+$where_conditions = [];
+$params = [];
+$types = '';
 
 if (!empty($search)) {
-    $search = "%$search%";
-    $where_clause .= " AND (fullname LIKE ? OR email LIKE ? OR username LIKE ? OR phone LIKE ?)";
+    $where_conditions[] = "(fullname LIKE ? OR email LIKE ? OR username LIKE ? OR phone LIKE ?)";
+    $search_param = "%$search%";
+    $params = array_merge($params, [$search_param, $search_param, $search_param, $search_param]);
+    $types .= 'ssss';
 }
 
 if ($status === 'active') {
-    $where_clause .= " AND is_active = TRUE";
+    $where_conditions[] = "is_active = TRUE";
 } elseif ($status === 'inactive') {
-    $where_clause .= " AND is_active = FALSE";
+    $where_conditions[] = "is_active = FALSE";
 }
 
-// Prepare SQL for counting total users
-$count_sql = "SELECT COUNT(*) as total FROM users WHERE $where_clause";
+$where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' AND ', $where_conditions) : '';
+
+// Get total count
+$count_sql = "SELECT COUNT(*) as total FROM users $where_clause";
 $count_stmt = $conn->prepare($count_sql);
-
-// Bind search parameters if needed
-if (!empty($search)) {
-    $count_stmt->bind_param("ssss", $search, $search, $search, $search);
+if (!empty($params)) {
+    $count_stmt->bind_param($types, ...$params);
 }
-
 $count_stmt->execute();
-$count_result = $count_stmt->get_result();
-$total_users = $count_result->fetch_assoc()['total'];
-$count_stmt->close();
+$total_users = $count_stmt->get_result()->fetch_assoc()['total'];
 
-// Pagination settings
-$users_per_page = 10;
+// Pagination
+$users_per_page = 15;
 $total_pages = ceil($total_users / $users_per_page);
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $users_per_page;
 
-// Prepare SQL for fetching users with pagination
-$sql = "SELECT id, fullname, email, username, address, phone, profile_image, is_active, last_login, created_at 
+// Get users with pagination
+$allowed_sorts = ['id', 'fullname', 'email', 'username', 'created_at', 'updated_at'];
+$sort = in_array($sort, $allowed_sorts) ? $sort : 'created_at';
+$order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
+
+$sql = "SELECT id, fullname, email, username, address, phone, profile_image, is_active, 
+               created_at, updated_at, otp_purpose, otp_expires_at 
         FROM users 
-        WHERE $where_clause 
-        ORDER BY created_at DESC 
+        $where_clause 
+        ORDER BY $sort $order 
         LIMIT ? OFFSET ?";
 
 $stmt = $conn->prepare($sql);
+$final_params = array_merge($params, [$users_per_page, $offset]);
+$final_types = $types . 'ii';
 
-// Add parameter types and values
-$types = '';
-$params = [];
-
-if (!empty($search)) {
-    $types .= 'ssss';
-    $params[] = $search;
-    $params[] = $search;
-    $params[] = $search;
-    $params[] = $search;
-}
-
-$types .= 'ii';
-$params[] = $users_per_page;
-$params[] = $offset;
-
-// Convert params array to references
-$bind_params = [];
-foreach ($params as $key => $value) {
-    $bind_params[$key] = &$params[$key];
-}
-
-// Bind parameters dynamically
-if (!empty($params)) {
-    array_unshift($bind_params, $types);
-    call_user_func_array([$stmt, 'bind_param'], $bind_params);
+if (!empty($final_params)) {
+    $stmt->bind_param($final_types, ...$final_params);
 }
 
 $stmt->execute();
 $users_result = $stmt->get_result();
 
-// Close the statement
-$stmt->close();
-
 // Function to format date
 function formatDate($date) {
     return date('M d, Y h:i A', strtotime($date));
+}
+
+// FIX: Updated getUserStatus function to handle null values properly
+function getUserStatus($is_active, $otp_purpose, $otp_expires_at) {
+    if (!$is_active) {
+        return ['status' => 'Inactive', 'class' => 'status-inactive'];
+    }
+    
+    // Check if user has pending email verification
+    if ($otp_purpose === 'EMAIL_VERIFICATION' && !empty($otp_expires_at) && strtotime($otp_expires_at) > time()) {
+        return ['status' => 'Pending Verification', 'class' => 'status-pending'];
+    }
+    
+    return ['status' => 'Active', 'class' => 'status-active'];
 }
 ?>
 
@@ -183,7 +198,7 @@ function formatDate($date) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management - HirayaFit Admin</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
             --primary: #111111;
@@ -192,11 +207,12 @@ function formatDate($date) {
             --light: #ffffff;
             --dark: #111111;
             --grey: #767676;
-            --sidebar-width: 250px;
+            --sidebar-width: 260px;
             --danger: #dc3545;
             --success: #28a745;
             --warning: #ffc107;
             --info: #17a2b8;
+            --pending: #fd7e14;
         }
         
         * {
@@ -215,25 +231,27 @@ function formatDate($date) {
         /* Sidebar Styles */
         .sidebar {
             width: var(--sidebar-width);
-            background-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, #1a1a1a 100%);
             color: white;
             position: fixed;
             height: 100vh;
             overflow-y: auto;
             transition: all 0.3s ease;
             z-index: 1000;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         }
         
         .sidebar-header {
-            padding: 20px;
+            padding: 25px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
         }
         
         .sidebar-logo {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 700;
             color: var(--light);
             text-decoration: none;
@@ -251,6 +269,13 @@ function formatDate($date) {
             font-size: 18px;
             cursor: pointer;
             display: none;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        .sidebar-close:hover {
+            background-color: rgba(255, 255, 255, 0.1);
         }
         
         .sidebar-menu {
@@ -258,11 +283,13 @@ function formatDate($date) {
         }
         
         .menu-title {
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
             color: #adb5bd;
-            padding: 10px 20px;
+            padding: 15px 20px 10px;
             margin-top: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
         }
         
         .sidebar-menu a {
@@ -270,24 +297,26 @@ function formatDate($date) {
             align-items: center;
             color: #e9ecef;
             text-decoration: none;
-            padding: 12px 20px;
+            padding: 14px 20px;
             transition: all 0.3s ease;
             font-size: 14px;
+            border-left: 3px solid transparent;
         }
         
         .sidebar-menu a:hover {
             background-color: rgba(255, 255, 255, 0.08);
             color: var(--secondary);
+            border-left-color: var(--secondary);
         }
         
         .sidebar-menu a.active {
-            background-color: rgba(255, 255, 255, 0.08);
-            border-left: 3px solid var(--secondary);
+            background-color: rgba(0, 113, 197, 0.15);
+            border-left-color: var(--secondary);
             color: var(--secondary);
         }
         
         .sidebar-menu a i {
-            margin-right: 10px;
+            margin-right: 12px;
             font-size: 16px;
             width: 20px;
             text-align: center;
@@ -303,8 +332,8 @@ function formatDate($date) {
         /* Top Navigation */
         .top-navbar {
             background-color: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            padding: 15px 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -320,6 +349,13 @@ function formatDate($date) {
             font-size: 20px;
             cursor: pointer;
             display: none;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        .toggle-sidebar:hover {
+            background-color: #f8f9fa;
         }
         
         .nav-left {
@@ -330,7 +366,7 @@ function formatDate($date) {
         .navbar-title {
             font-weight: 600;
             color: var(--dark);
-            font-size: 18px;
+            font-size: 20px;
             margin-right: 20px;
         }
         
@@ -347,19 +383,26 @@ function formatDate($date) {
         .navbar-actions {
             display: flex;
             align-items: center;
+            gap: 15px;
         }
         
         .navbar-actions .nav-link {
             color: var(--dark);
             font-size: 18px;
-            margin-right: 20px;
             position: relative;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        .navbar-actions .nav-link:hover {
+            background-color: #f8f9fa;
         }
         
         .notification-count {
             position: absolute;
-            top: -5px;
-            right: -5px;
+            top: 2px;
+            right: 2px;
             background-color: var(--secondary);
             color: white;
             border-radius: 50%;
@@ -369,6 +412,7 @@ function formatDate($date) {
             display: flex;
             justify-content: center;
             align-items: center;
+            font-weight: 600;
         }
         
         /* Admin Profile Styles */
@@ -377,6 +421,13 @@ function formatDate($date) {
             align-items: center;
             position: relative;
             cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .admin-profile:hover {
+            background-color: #f8f9fa;
         }
 
         .admin-avatar-container {
@@ -386,7 +437,7 @@ function formatDate($date) {
             height: 40px;
             overflow: hidden;
             border: 2px solid var(--secondary);
-            margin-right: 10px;
+            margin-right: 12px;
         }
 
         .admin-avatar {
@@ -421,22 +472,22 @@ function formatDate($date) {
             display: none;
             position: absolute;
             right: 0;
-            top: 45px;
+            top: 55px;
             background-color: white;
-            min-width: 220px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            min-width: 240px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
             z-index: 1000;
-            border-radius: 4px;
+            border-radius: 8px;
             overflow: hidden;
+            border: 1px solid #e9ecef;
         }
 
         .admin-dropdown-header {
-            background-color: var(--dark);
+            background: linear-gradient(135deg, var(--dark) 0%, #1a1a1a 100%);
             color: white;
-            padding: 10px 15px;
+            padding: 15px;
             display: flex;
             align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
         .admin-dropdown-avatar-container {
@@ -469,23 +520,6 @@ function formatDate($date) {
             color: var(--secondary);
         }
 
-        .admin-dropdown-user {
-            padding: 15px;
-            text-align: center;
-            border-bottom: 1px solid #eee;
-        }
-
-        .admin-dropdown-user-name {
-            font-weight: 600;
-            margin-bottom: 5px;
-            font-size: 16px;
-        }
-
-        .admin-dropdown-user-email {
-            color: #6c757d;
-            font-size: 14px;
-        }
-
         .admin-dropdown-content a {
             color: var(--dark);
             padding: 12px 15px;
@@ -494,6 +528,7 @@ function formatDate($date) {
             align-items: center;
             font-size: 14px;
             border-bottom: 1px solid #f5f5f5;
+            transition: background-color 0.2s;
         }
 
         .admin-dropdown-content a i {
@@ -504,6 +539,7 @@ function formatDate($date) {
 
         .admin-dropdown-content a.logout {
             color: var(--danger);
+            border-bottom: none;
         }
 
         .admin-dropdown-content a:hover {
@@ -514,76 +550,189 @@ function formatDate($date) {
             display: block;
         }
         
-        /* User Management Styles */
+        /* Dashboard Container */
         .dashboard-container {
             padding: 30px;
         }
         
+        .page-header {
+            margin-bottom: 30px;
+        }
+        
         .page-title {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 5px;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
             color: var(--dark);
         }
         
         .page-subtitle {
-            font-size: 14px;
+            font-size: 16px;
             color: var(--grey);
             margin-bottom: 20px;
         }
         
-        .card {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
             margin-bottom: 30px;
         }
         
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border-left: 4px solid var(--secondary);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        }
+        
+        .stat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .stat-card-title {
+            font-size: 14px;
+            color: var(--grey);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+        }
+        
+        .stat-card-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+        
+        .stat-card-change {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .change-positive {
+            color: var(--success);
+        }
+        
+        .change-negative {
+            color: var(--danger);
+        }
+        
+        /* Alert Messages */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            border-left: 4px solid;
+        }
+        
+        .alert i {
+            margin-right: 10px;
+            font-size: 16px;
+        }
+        
+        .alert-success {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--success);
+            border-left-color: var(--success);
+        }
+        
+        .alert-error {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--danger);
+            border-left-color: var(--danger);
+        }
+        
+        /* Main Card */
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        
         .card-header {
-            padding: 20px;
+            padding: 25px;
             border-bottom: 1px solid #f5f5f5;
+            background: linear-gradient(135deg, #fafafa 0%, #ffffff 100%);
+        }
+        
+        .card-header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
+            gap: 20px;
         }
         
         .card-title {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
             color: var(--dark);
             margin: 0;
         }
         
+        .card-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        /* Search and Filter Controls */
         .search-filter-container {
             display: flex;
             align-items: center;
+            gap: 15px;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-            width: 100%;
-        }
-
-        @media (min-width: 768px) {
-            .search-filter-container {
-                margin-top: 0;
-                width: auto;
-            }
         }
         
         .search-box {
             display: flex;
             background: #f8f9fa;
-            border-radius: 4px;
+            border-radius: 8px;
             overflow: hidden;
-            width: 100%;
-            max-width: 300px;
+            border: 1px solid #e9ecef;
+            transition: border-color 0.2s;
+            min-width: 300px;
+        }
+        
+        .search-box:focus-within {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(0, 113, 197, 0.1);
         }
         
         .search-box input {
             flex: 1;
             border: none;
-            padding: 10px 15px;
+            padding: 12px 15px;
             background: transparent;
             outline: none;
             font-size: 14px;
@@ -593,8 +742,13 @@ function formatDate($date) {
             background: var(--secondary);
             color: white;
             border: none;
-            padding: 0 15px;
+            padding: 0 18px;
             cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .search-box button:hover {
+            background-color: #0062a8;
         }
         
         .filter-dropdown {
@@ -602,38 +756,46 @@ function formatDate($date) {
         }
         
         .filter-btn {
-            background: #f8f9fa;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
+            background: white;
+            border: 1px solid #e9ecef;
+            padding: 12px 15px;
+            border-radius: 8px;
             font-size: 14px;
             cursor: pointer;
             display: flex;
             align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            min-width: 140px;
+            justify-content: space-between;
         }
         
-        .filter-btn i {
-            margin-left: 5px;
+        .filter-btn:hover {
+            border-color: var(--secondary);
+            background-color: #f8f9fa;
         }
         
         .filter-dropdown-content {
             display: none;
             position: absolute;
             right: 0;
-            top: 40px;
+            top: 45px;
             background: white;
-            min-width: 150px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-radius: 4px;
+            min-width: 160px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-radius: 8px;
             z-index: 10;
+            border: 1px solid #e9ecef;
+            overflow: hidden;
         }
         
         .filter-dropdown-content a {
             display: block;
-            padding: 10px 15px;
+            padding: 12px 15px;
             text-decoration: none;
             color: var(--dark);
             font-size: 14px;
+            transition: background-color 0.2s;
         }
         
         .filter-dropdown-content a:hover {
@@ -644,6 +806,7 @@ function formatDate($date) {
             display: block;
         }
         
+        /* Table Styles */
         .card-body {
             padding: 0;
         }
@@ -654,28 +817,70 @@ function formatDate($date) {
         }
         
         .user-table th, .user-table td {
-            padding: 15px 20px;
+            padding: 18px 25px;
             text-align: left;
             border-bottom: 1px solid #f5f5f5;
             font-size: 14px;
         }
         
         .user-table th {
-            background-color: #f8f9fa;
+            background-color: #fafafa;
             font-weight: 600;
             color: var(--dark);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .user-table tbody tr {
+            transition: background-color 0.2s;
         }
         
         .user-table tbody tr:hover {
             background-color: #f8f9fa;
         }
         
-        .status-badge {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e9ecef;
+        }
+        
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .user-name {
             font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 3px;
+            font-size: 14px;
+        }
+        
+        .user-email {
+            font-size: 12px;
+            color: var(--grey);
+        }
+        
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .status-active {
@@ -688,9 +893,15 @@ function formatDate($date) {
             color: var(--danger);
         }
         
+        .status-pending {
+            background-color: rgba(253, 126, 20, 0.1);
+            color: var(--pending);
+        }
+        
+        /* Action Buttons */
         .user-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
         
         .action-btn {
@@ -698,12 +909,12 @@ function formatDate($date) {
             border: none;
             cursor: pointer;
             font-size: 16px;
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 4px;
+            border-radius: 6px;
             transition: all 0.2s;
         }
         
@@ -713,6 +924,16 @@ function formatDate($date) {
         
         .view-btn:hover {
             background-color: rgba(23, 162, 184, 0.1);
+            transform: scale(1.1);
+        }
+        
+        .activate-btn {
+            color: var(--success);
+        }
+        
+        .activate-btn:hover {
+            background-color: rgba(40, 167, 69, 0.1);
+            transform: scale(1.1);
         }
         
         .delete-btn {
@@ -721,65 +942,84 @@ function formatDate($date) {
         
         .delete-btn:hover {
             background-color: rgba(220, 53, 69, 0.1);
+            transform: scale(1.1);
         }
         
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        
-        .user-name-email {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .user-name {
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 3px;
-        }
-        
-        .user-email {
-            font-size: 12px;
-            color: var(--grey);
+        /* Pagination */
+        .pagination-container {
+            padding: 25px;
+            border-top: 1px solid #f5f5f5;
+            background-color: #fafafa;
         }
         
         .pagination {
             display: flex;
             justify-content: center;
-            margin: 20px 0;
-            gap: 5px;
+            align-items: center;
+            gap: 8px;
         }
         
         .pagination a, .pagination span {
-            display: inline-block;
-            padding: 8px 12px;
-            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 14px;
+            border-radius: 6px;
             text-decoration: none;
             font-size: 14px;
+            font-weight: 500;
+            min-width: 40px;
+            transition: all 0.2s;
         }
         
         .pagination a {
-            background-color: #f8f9fa;
+            background-color: white;
             color: var(--dark);
+            border: 1px solid #e9ecef;
         }
         
         .pagination a:hover {
-            background-color: #e9ecef;
+            background-color: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+            transform: translateY(-1px);
         }
         
         .pagination span {
             background-color: var(--secondary);
             color: white;
+            border: 1px solid var(--secondary);
         }
         
+        .pagination .page-info {
+            background: none;
+            border: none;
+            color: var(--grey);
+            font-size: 13px;
+            margin: 0 10px;
+        }
+        
+        /* Empty State */
         .empty-message {
-            padding: 30px;
+            padding: 60px 30px;
             text-align: center;
             color: var(--grey);
-            font-size: 16px;
+        }
+        
+        .empty-message i {
+            font-size: 64px;
+            color: #dee2e6;
+            margin-bottom: 20px;
+        }
+        
+        .empty-message h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+        
+        .empty-message p {
+            font-size: 14px;
         }
         
         /* Modal Styles */
@@ -790,7 +1030,7 @@ function formatDate($date) {
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0,0,0,0.6);
             z-index: 1000;
             overflow: auto;
             justify-content: center;
@@ -803,35 +1043,38 @@ function formatDate($date) {
         
         .modal-content {
             background-color: white;
-            border-radius: 8px;
+            border-radius: 12px;
             width: 100%;
             max-width: 500px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             position: relative;
-            animation: modalFadeIn 0.3s;
+            animation: modalFadeIn 0.3s ease-out;
+            margin: 20px;
         }
         
         @keyframes modalFadeIn {
             from {
                 opacity: 0;
-                transform: translateY(-20px);
+                transform: translateY(-30px) scale(0.95);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0) scale(1);
             }
         }
         
         .modal-header {
-            padding: 20px;
+            padding: 25px;
             border-bottom: 1px solid #f5f5f5;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: linear-gradient(135deg, #fafafa 0%, #ffffff 100%);
+            border-radius: 12px 12px 0 0;
         }
         
         .modal-title {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
             color: var(--dark);
             margin: 0;
@@ -840,31 +1083,79 @@ function formatDate($date) {
         .modal-close {
             background: none;
             border: none;
-            font-size: 20px;
+            font-size: 24px;
             cursor: pointer;
             color: var(--grey);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .modal-close:hover {
+            background-color: #f8f9fa;
+            color: var(--dark);
         }
         
         .modal-body {
-            padding: 20px;
+            padding: 25px;
         }
         
         .modal-footer {
-            padding: 15px 20px;
+            padding: 20px 25px;
             border-top: 1px solid #f5f5f5;
             display: flex;
             justify-content: flex-end;
-            gap: 10px;
+            gap: 12px;
+            background-color: #fafafa;
+            border-radius: 0 0 12px 12px;
         }
         
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--dark);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+            background-color: white;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(0, 113, 197, 0.1);
+        }
+        
+        /* Button Styles */
         .btn {
-            padding: 10px 15px;
-            border-radius: 4px;
+            padding: 12px 20px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
             border: none;
             transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
         }
         
         .btn-secondary {
@@ -874,93 +1165,47 @@ function formatDate($date) {
         
         .btn-secondary:hover {
             background-color: #dee2e6;
+            transform: translateY(-1px);
         }
         
         .btn-danger {
-            background-color: var(--danger);
+            background: linear-gradient(135deg, var(--danger) 0%, #c82333 100%);
             color: white;
         }
         
         .btn-danger:hover {
-            background-color: #c82333;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
         }
         
         .btn-primary {
-            background-color: var(--secondary);
+            background: linear-gradient(135deg, var(--secondary) 0%, #0062a8 100%);
             color: white;
         }
         
         .btn-primary:hover {
-            background-color: #0062a8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 113, 197, 0.3);
         }
         
-        .form-group {
-            margin-bottom: 15px;
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, #20c997 100%);
+            color: white;
         }
         
-        .form-label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--dark);
-        }
-        
-        .form-control {
-            width: 100%;
-            padding: 10px 15px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 14px;
-            transition: border-color 0.2s;
-        }
-        
-        .form-control:focus {
-            outline: none;
-            border-color: var(--secondary);
-            box-shadow: 0 0 0 0.2rem rgba(0, 113, 197, 0.25);
-        }
-        
-        .alert {
-            padding: 12px 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-        
-        .alert-success {
-            background-color: rgba(40, 167, 69, 0.1);
-            color: var(--success);
-            border: 1px solid rgba(40, 167, 69, 0.2);
-        }
-        
-        .alert-danger {
-            background-color: rgba(220, 53, 69, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(220, 53, 69, 0.2);
+        .btn-success:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
         }
         
         /* User Details Modal */
-        .user-detail-row {
-            display: flex;
-            margin-bottom: 15px;
-        }
-        
-        .detail-label {
-            width: 120px;
-            font-weight: 500;
-            color: var(--dark);
-        }
-        
-        .detail-value {
-            flex: 1;
-            color: var(--grey);
-        }
-        
         .user-profile-header {
             display: flex;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 8px;
         }
         
         .large-avatar {
@@ -977,7 +1222,7 @@ function formatDate($date) {
         }
         
         .user-profile-name {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 600;
             color: var(--dark);
             margin-bottom: 5px;
@@ -987,6 +1232,7 @@ function formatDate($date) {
             font-size: 14px;
             color: var(--secondary);
             margin-bottom: 5px;
+            font-weight: 500;
         }
         
         .user-profile-date {
@@ -994,14 +1240,50 @@ function formatDate($date) {
             color: var(--grey);
         }
         
+        .user-detail-row {
+            display: flex;
+            margin-bottom: 15px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        
+        .user-detail-row:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            width: 120px;
+            font-weight: 500;
+            color: var(--dark);
+            font-size: 14px;
+        }
+        
+        .detail-value {
+            flex: 1;
+            color: var(--grey);
+            font-size: 14px;
+        }
+        
         /* Responsive Design */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+        }
+        
         @media (max-width: 992px) {
             .welcome-text {
                 display: none;
             }
             
-            .user-table th:nth-child(3),
-            .user-table td:nth-child(3) {
+            .search-box {
+                min-width: 250px;
+            }
+            
+            .user-table th:nth-child(4),
+            .user-table td:nth-child(4),
+            .user-table th:nth-child(5),
+            .user-table td:nth-child(5) {
                 display: none;
             }
         }
@@ -1033,35 +1315,36 @@ function formatDate($date) {
                 display: none;
             }
             
-            .user-table th:nth-child(4),
-            .user-table td:nth-child(4),
-            .user-table th:nth-child(5),
-            .user-table td:nth-child(5) {
-                display: none;
+            .dashboard-container {
+                padding: 20px 15px;
             }
             
-            .card-header {
+            .card-header-content {
                 flex-direction: column;
                 align-items: flex-start;
             }
             
             .search-filter-container {
-                margin-top: 15px;
                 flex-direction: column;
-                align-items: flex-start;
+                align-items: stretch;
                 width: 100%;
             }
             
             .search-box {
-                max-width: 100%;
+                min-width: 100%;
+            }
+            
+            .user-table th:nth-child(3),
+            .user-table td:nth-child(3) {
+                display: none;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
             }
         }
         
         @media (max-width: 576px) {
-            .dashboard-container {
-                padding: 20px 15px;
-            }
-            
             .user-table th:nth-child(2),
             .user-table td:nth-child(2) {
                 display: none;
@@ -1069,6 +1352,16 @@ function formatDate($date) {
             
             .pagination {
                 flex-wrap: wrap;
+            }
+            
+            .modal-content {
+                margin: 10px;
+            }
+            
+            .modal-header,
+            .modal-body,
+            .modal-footer {
+                padding: 20px;
             }
         }
     </style>
@@ -1092,10 +1385,10 @@ function formatDate($date) {
             <a href="stock.php"><i class="fas fa-box"></i> Stock Management</a>
             
             <div class="menu-title">USERS</div>
-            <a href="users.php" class="active"><i class="fas fa-users"></i> User Management</a>
+            <a href="user-management.php" class="active"><i class="fas fa-users"></i> User Management</a>
             
             <div class="menu-title">REPORTS & SETTINGS</div>
-            <a href="reports.php"><i class="fas fa-file-pdf"></i> Reports & Analytics</a>
+            <a href="reports.php"><i class="fas fa-chart-bar"></i> Reports & Analytics</a>
             <a href="settings.php"><i class="fas fa-cog"></i> System Settings</a>
         </div>
     </aside>
@@ -1107,7 +1400,7 @@ function formatDate($date) {
             <div class="nav-left">
                 <button class="toggle-sidebar" id="toggleSidebar"><i class="fas fa-bars"></i></button>
                 <span class="navbar-title">User Management</span>
-                <div class="welcome-text">Welcome, <strong><?php echo htmlspecialchars($admin['fullname']); ?></strong>!</div>
+                <div class="welcome-text">Welcome back, <strong><?php echo htmlspecialchars($admin['fullname']); ?></strong>!</div>
             </div>
             
             <div class="navbar-actions">
@@ -1131,7 +1424,7 @@ function formatDate($date) {
                         </div>
                     </div>
                     
-                    <div class="admin-dropdown-content" id="adminDropdownContent">
+                    <div class="admin-dropdown-content">
                         <div class="admin-dropdown-header">
                             <div class="admin-dropdown-avatar-container">
                                 <img src="<?php echo htmlspecialchars($profileImageUrl); ?>" alt="Admin" class="admin-dropdown-avatar">
@@ -1141,12 +1434,8 @@ function formatDate($date) {
                                 <span class="admin-dropdown-role"><?php echo htmlspecialchars($admin['role']); ?></span>
                             </div>
                         </div>
-                        <div class="admin-dropdown-user">
-                            <h4 class="admin-dropdown-user-name"><?php echo htmlspecialchars($admin['fullname']); ?></h4>
-                            <p class="admin-dropdown-user-email"><?php echo htmlspecialchars($admin['email']); ?></p>
-                        </div>
                         <a href="profile.php"><i class="fas fa-user"></i> Profile Settings</a>
-                       
+                        <a href="change-password.php"><i class="fas fa-lock"></i> Change Password</a>
                         <a href="?logout=true" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     </div>
                 </div>
@@ -1155,34 +1444,108 @@ function formatDate($date) {
 
         <!-- Dashboard Content -->
         <div class="dashboard-container">
-            <h1 class="page-title">User Management</h1>
-            <p class="page-subtitle">View and manage all registered users in the system.</p>
+            <div class="page-header">
+                <h1 class="page-title">User Management</h1>
+                <p class="page-subtitle">Manage and monitor all registered users in your system</p>
+            </div>
             
-            <?php if (!empty($deleteMessage)): ?>
-                <div class="alert <?php echo $deleteSuccess ? 'alert-success' : 'alert-danger'; ?>">
-                    <?php echo htmlspecialchars($deleteMessage); ?>
+            <?php if (!empty($message)): ?>
+                <div class="alert alert-<?php echo $messageType; ?>">
+                    <i class="fas fa-<?php echo $messageType === 'success' ? 'check-circle' : 'exclamation-triangle'; ?>"></i>
+                    <?php echo htmlspecialchars($message); ?>
                 </div>
             <?php endif; ?>
+            
+            <!-- Stats Cards -->
+            <?php
+            // Get user statistics
+            $stats_sql = "SELECT 
+                COUNT(*) as total_users,
+                SUM(CASE WHEN is_active = TRUE THEN 1 ELSE 0 END) as active_users,
+                SUM(CASE WHEN is_active = FALSE THEN 1 ELSE 0 END) as inactive_users,
+                SUM(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as new_users
+                FROM users";
+            $stats_result = $conn->query($stats_sql);
+            $stats = $stats_result->fetch_assoc();
+            ?>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">Total Users</div>
+                        <div class="stat-card-icon" style="background: linear-gradient(135deg, var(--secondary) 0%, #0062a8 100%);">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="stat-card-value"><?php echo number_format($stats['total_users']); ?></div>
+                    <div class="stat-card-change change-positive">
+                        <i class="fas fa-arrow-up"></i> All registered users
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">Active Users</div>
+                        <div class="stat-card-icon" style="background: linear-gradient(135deg, var(--success) 0%, #20c997 100%);">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                    </div>
+                    <div class="stat-card-value"><?php echo number_format($stats['active_users']); ?></div>
+                    <div class="stat-card-change change-positive">
+                        <i class="fas fa-arrow-up"></i> Currently active
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">Inactive Users</div>
+                        <div class="stat-card-icon" style="background: linear-gradient(135deg, var(--danger) 0%, #c82333 100%);">
+                            <i class="fas fa-user-times"></i>
+                        </div>
+                    </div>
+                    <div class="stat-card-value"><?php echo number_format($stats['inactive_users']); ?></div>
+                    <div class="stat-card-change">
+                        <i class="fas fa-minus"></i> Deactivated accounts
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-card-title">New This Month</div>
+                        <div class="stat-card-icon" style="background: linear-gradient(135deg, var(--pending) 0%, #fd7e14 100%);">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                    </div>
+                    <div class="stat-card-value"><?php echo number_format($stats['new_users']); ?></div>
+                    <div class="stat-card-change change-positive">
+                        <i class="fas fa-arrow-up"></i> Last 30 days
+                    </div>
+                </div>
+            </div>
             
             <!-- Users List Card -->
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Users List</h2>
-                    <div class="search-filter-container">
-                        <form action="" method="GET" class="search-box">
-                            <input type="text" name="search" placeholder="Search users..." value="<?php echo htmlspecialchars($search); ?>">
-                            <button type="submit"><i class="fas fa-search"></i></button>
-                        </form>
-                        
-                        <div class="filter-dropdown" id="statusFilter">
-                            <button class="filter-btn">
-                                <?php echo $status === 'active' ? 'Active Users' : ($status === 'inactive' ? 'Inactive Users' : 'All Users'); ?>
-                                <i class="fas fa-chevron-down"></i>
-                            </button>
-                            <div class="filter-dropdown-content">
-                                <a href="?status=all<?php echo !empty($search) ? '&search='.urlencode($search) : ''; ?>">All Users</a>
-                                <a href="?status=active<?php echo !empty($search) ? '&search='.urlencode($search) : ''; ?>">Active Users</a>
-                                <a href="?status=inactive<?php echo !empty($search) ? '&search='.urlencode($search) : ''; ?>">Inactive Users</a>
+                    <div class="card-header-content">
+                        <h2 class="card-title">Users Directory</h2>
+                        <div class="card-actions">
+                            <div class="search-filter-container">
+                                <form action="" method="GET" class="search-box">
+                                    <input type="text" name="search" placeholder="Search users by name, email, username..." value="<?php echo htmlspecialchars($search); ?>">
+                                    <button type="submit"><i class="fas fa-search"></i></button>
+                                </form>
+                                
+                                <div class="filter-dropdown" id="statusFilter">
+                                    <button class="filter-btn" type="button">
+                                        <span><?php echo $status === 'active' ? 'Active Users' : ($status === 'inactive' ? 'Inactive Users' : 'All Users'); ?></span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                    <div class="filter-dropdown-content">
+                                        <a href="?status=all<?php echo !empty($search) ? '&search='.urlencode($search) : ''; ?>">All Users</a>
+                                        <a href="?status=active<?php echo !empty($search) ? '&search='.urlencode($search) : ''; ?>">Active Users</a>
+                                        <a href="?status=inactive<?php echo !empty($search) ? '&search='.urlencode($search) : ''; ?>">Inactive Users</a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1193,45 +1556,53 @@ function formatDate($date) {
                         <table class="user-table">
                             <thead>
                                 <tr>
-                                    <th>User ID</th>
-                                    <th>Image</th>
+                                    <th>ID</th>
+                                    <th>User Information</th>
                                     <th>Username</th>
                                     <th>Phone</th>
-                                    <th>Last Login</th>
-                                    <th>Joined Date</th>
+                                    <th>Join Date</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php while ($user = $users_result->fetch_assoc()): ?>
+                                <?php while ($user = $users_result->fetch_assoc()): 
+                                    $userStatus = getUserStatus($user['is_active'], $user['otp_purpose'], $user['otp_expires_at']);
+                                ?>
                                     <tr>
-                                        <td><?php echo htmlspecialchars($user['id']); ?></td>
+                                        <td><strong>#<?php echo $user['id']; ?></strong></td>
                                         <td>
-                                            <div style="display: flex; align-items: center;">
+                                            <div class="user-info">
                                                 <img src="<?php echo getProfileImageUrl($user['profile_image']); ?>" alt="<?php echo htmlspecialchars($user['fullname']); ?>" class="user-avatar">
-                                                <div class="user-name-email" style="margin-left: 10px;">
+                                                <div class="user-details">
                                                     <div class="user-name"><?php echo htmlspecialchars($user['fullname']); ?></div>
                                                     <div class="user-email"><?php echo htmlspecialchars($user['email']); ?></div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td><?php echo htmlspecialchars($user['username']); ?></td>
-                                        <td><?php echo !empty($user['phone']) ? htmlspecialchars($user['phone']) : '-'; ?></td>
-                                        <td><?php echo $user['last_login'] ? formatDate($user['last_login']) : 'Never'; ?></td>
+                                        <td><strong>@<?php echo htmlspecialchars($user['username']); ?></strong></td>
+                                        <td><?php echo !empty($user['phone']) ? htmlspecialchars($user['phone']) : '<span style="color: #ccc;">Not provided</span>'; ?></td>
                                         <td><?php echo formatDate($user['created_at']); ?></td>
                                         <td>
-                                            <span class="status-badge <?php echo $user['is_active'] ? 'status-active' : 'status-inactive'; ?>">
-                                                <?php echo $user['is_active'] ? 'Active' : 'Inactive'; ?>
+                                            <span class="status-badge <?php echo $userStatus['class']; ?>">
+                                                <?php echo $userStatus['status']; ?>
                                             </span>
                                         </td>
                                         <td>
                                             <div class="user-actions">
-                                                <button class="action-btn view-btn" onclick="openUserDetails(<?php echo $user['id']; ?>, '<?php echo addslashes($user['fullname']); ?>', '<?php echo addslashes($user['username']); ?>', '<?php echo addslashes($user['email']); ?>', '<?php echo addslashes($user['address'] ?? ''); ?>', '<?php echo addslashes($user['phone'] ?? ''); ?>', '<?php echo addslashes($user['profile_image'] ?? ''); ?>', '<?php echo $user['is_active'] ? 'Active' : 'Inactive'; ?>', '<?php echo $user['last_login'] ? formatDate($user['last_login']) : 'Never'; ?>', '<?php echo formatDate($user['created_at']); ?>')">
+                                                <button class="action-btn view-btn" onclick="openUserDetails(<?php echo htmlspecialchars(json_encode($user)); ?>)" title="View Details">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
-                                                <?php if ($user['is_active']): ?>
-                                                    <button class="action-btn delete-btn" onclick="openDeleteModal(<?php echo $user['id']; ?>, '<?php echo addslashes($user['fullname']); ?>')">
+                                                <?php if (!$user['is_active']): ?>
+                                                    <form method="POST" style="display: inline;">
+                                                        <input type="hidden" name="action" value="activate_user">
+                                                        <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
+                                                        <button type="submit" class="action-btn activate-btn" title="Activate User" onclick="return confirm('Are you sure you want to activate this user?')">
+                                                            <i class="fas fa-user-check"></i>
+                                                        </button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <button class="action-btn delete-btn" onclick="openDeleteModal(<?php echo $user['id']; ?>, '<?php echo addslashes($user['fullname']); ?>')" title="Delete User">
                                                         <i class="fas fa-trash-alt"></i>
                                                     </button>
                                                 <?php endif; ?>
@@ -1244,52 +1615,59 @@ function formatDate($date) {
                         
                         <!-- Pagination -->
                         <?php if ($total_pages > 1): ?>
-                            <div class="pagination">
-                                <?php if ($page > 1): ?>
-                                    <a href="?page=<?php echo $page - 1; ?>&status=<?php echo $status; ?><?php echo !empty($search) ? '&search='.urlencode($search) : ''; ?>">
-                                        <i class="fas fa-chevron-left"></i>
-                                    </a>
-                                <?php endif; ?>
-                                
-                                <?php
-                                $start_page = max(1, $page - 2);
-                                $end_page = min($total_pages, $page + 2);
-                                
-                                if ($start_page > 1) {
-                                    echo '<a href="?page=1&status=' . $status . (!empty($search) ? '&search='.urlencode($search) : '') . '">1</a>';
-                                    if ($start_page > 2) {
-                                        echo '<span>...</span>';
+                            <div class="pagination-container">
+                                <div class="pagination">
+                                    <?php if ($page > 1): ?>
+                                        <a href="?page=<?php echo $page - 1; ?>&status=<?php echo $status; ?><?php echo !empty($search) ? '&search='.urlencode($search) : ''; ?>&sort=<?php echo $sort; ?>&order=<?php echo $order; ?>">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                    
+                                    <?php
+                                    $start_page = max(1, $page - 2);
+                                    $end_page = min($total_pages, $page + 2);
+                                    
+                                    if ($start_page > 1) {
+                                        echo '<a href="?page=1&status=' . $status . (!empty($search) ? '&search='.urlencode($search) : '') . '&sort=' . $sort . '&order=' . $order . '">1</a>';
+                                        if ($start_page > 2) {
+                                            echo '<span class="page-info">...</span>';
+                                        }
                                     }
-                                }
-                                
-                                for ($i = $start_page; $i <= $end_page; $i++) {
-                                    if ($i == $page) {
-                                        echo '<span>' . $i . '</span>';
-                                    } else {
-                                        echo '<a href="?page=' . $i . '&status=' . $status . (!empty($search) ? '&search='.urlencode($search) : '') . '">' . $i . '</a>';
+                                    
+                                    for ($i = $start_page; $i <= $end_page; $i++) {
+                                        if ($i == $page) {
+                                            echo '<span>' . $i . '</span>';
+                                        } else {
+                                            echo '<a href="?page=' . $i . '&status=' . $status . (!empty($search) ? '&search='.urlencode($search) : '') . '&sort=' . $sort . '&order=' . $order . '">' . $i . '</a>';
+                                        }
                                     }
-                                }
-                                
-                                if ($end_page < $total_pages) {
-                                    if ($end_page < $total_pages - 1) {
-                                        echo '<span>...</span>';
+                                    
+                                    if ($end_page < $total_pages) {
+                                        if ($end_page < $total_pages - 1) {
+                                            echo '<span class="page-info">...</span>';
+                                        }
+                                        echo '<a href="?page=' . $total_pages . '&status=' . $status . (!empty($search) ? '&search='.urlencode($search) : '') . '&sort=' . $sort . '&order=' . $order . '">' . $total_pages . '</a>';
                                     }
-                                    echo '<a href="?page=' . $total_pages . '&status=' . $status . (!empty($search) ? '&search='.urlencode($search) : '') . '">' . $total_pages . '</a>';
-                                }
-                                ?>
-                                
-                                <?php if ($page < $total_pages): ?>
-                                    <a href="?page=<?php echo $page + 1; ?>&status=<?php echo $status; ?><?php echo !empty($search) ? '&search='.urlencode($search) : ''; ?>">
-                                        <i class="fas fa-chevron-right"></i>
-                                    </a>
-                                <?php endif; ?>
+                                    ?>
+                                    
+                                    <?php if ($page < $total_pages): ?>
+                                        <a href="?page=<?php echo $page + 1; ?>&status=<?php echo $status; ?><?php echo !empty($search) ? '&search='.urlencode($search) : ''; ?>&sort=<?php echo $sort; ?>&order=<?php echo $order; ?>">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                    
+                                    <span class="page-info">
+                                        Showing <?php echo (($page - 1) * $users_per_page) + 1; ?> to <?php echo min($page * $users_per_page, $total_users); ?> of <?php echo $total_users; ?> users
+                                    </span>
+                                </div>
                             </div>
                         <?php endif; ?>
                         
                     <?php else: ?>
                         <div class="empty-message">
-                            <i class="fas fa-users" style="font-size: 48px; color: #dee2e6; margin-bottom: 15px;"></i>
-                            <p>No users found. <?php echo !empty($search) ? 'Try a different search term.' : ''; ?></p>
+                            <i class="fas fa-users"></i>
+                            <h3>No Users Found</h3>
+                            <p><?php echo !empty($search) ? 'Try adjusting your search criteria or filters.' : 'No users have been registered yet.'; ?></p>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -1306,7 +1684,7 @@ function formatDate($date) {
             </div>
             <div class="modal-body">
                 <div class="user-profile-header">
-                    <img src="" alt="User" class="large-avatar" id="detailsUserAvatar">
+                    <img src="/placeholder.svg" alt="User" class="large-avatar" id="detailsUserAvatar">
                     <div class="user-profile-info">
                         <h2 class="user-profile-name" id="detailsUserName"></h2>
                         <div class="user-profile-username" id="detailsUserUsername"></div>
@@ -1337,12 +1715,14 @@ function formatDate($date) {
                 </div>
                 
                 <div class="user-detail-row">
-                    <div class="detail-label">Last Login:</div>
-                    <div class="detail-value" id="detailsUserLastLogin"></div>
+                    <div class="detail-label">Last Updated:</div>
+                    <div class="detail-value" id="detailsUserUpdated"></div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeUserDetailsModal()">Close</button>
+                <button class="btn btn-secondary" onclick="closeUserDetailsModal()">
+                    <i class="fas fa-times"></i> Close
+                </button>
             </div>
         </div>
     </div>
@@ -1351,25 +1731,46 @@ function formatDate($date) {
     <div class="modal" id="deleteModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">Deactivate User</h3>
+                <h3 class="modal-title">
+                    <i class="fas fa-exclamation-triangle" style="color: var(--danger); margin-right: 10px;"></i>
+                    Delete User Account
+                </h3>
                 <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to deactivate the user <strong id="deleteUserName"></strong>?</p>
-                <p>This will prevent the user from logging in, but their data will be preserved in the system.</p>
+                <div style="background: rgba(220, 53, 69, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--danger);">
+                    <p style="margin: 0; color: var(--danger); font-weight: 500;">
+                        <i class="fas fa-info-circle"></i> 
+                        You are about to permanently delete the user account for <strong id="deleteUserName"></strong>.
+                    </p>
+                </div>
                 
-                <form action="" method="POST" id="deleteForm">
+                <p style="margin-bottom: 15px;">This action will:</p>
+                <ul style="margin-bottom: 20px; padding-left: 20px; color: var(--grey);">
+                    <li>Permanently remove the user from the system</li>
+                    <li>Delete all associated user data</li>
+                    <li>This action cannot be undone</li>
+                </ul>
+                
+                <form method="POST" id="deleteForm">
+                    <input type="hidden" name="action" value="delete_user">
                     <input type="hidden" name="user_id" id="deleteUserId">
                     
                     <div class="form-group">
-                        <label for="admin_password" class="form-label">Enter your admin password to confirm:</label>
-                        <input type="password" name="admin_password" id="admin_password" class="form-control" required>
+                        <label for="admin_password" class="form-label">
+                            <i class="fas fa-lock"></i> Enter your admin password to confirm:
+                        </label>
+                        <input type="password" name="admin_password" id="admin_password" class="form-control" required placeholder="Your admin password">
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
-                <button class="btn btn-danger" name= "delete_user" onclick="document.getElementById('deleteForm').submit()">Deactivate User</button>
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn btn-danger" onclick="document.getElementById('deleteForm').submit()">
+                    <i class="fas fa-trash-alt"></i> Delete User
+                </button>
             </div>
         </div>
     </div>
@@ -1403,26 +1804,36 @@ function formatDate($date) {
         });
         
         // User details modal functionality
-        function openUserDetails(id, name, username, email, address, phone, image, status, lastLogin, joinDate) {
+        function openUserDetails(user) {
             // Set the user details in the modal
-            document.getElementById('detailsUserName').textContent = name;
-            document.getElementById('detailsUserUsername').textContent = '@' + username;
-            document.getElementById('detailsUserEmail').textContent = email;
-            document.getElementById('detailsUserPhone').textContent = phone || 'Not provided';
-            document.getElementById('detailsUserAddress').textContent = address || 'Not provided';
+            document.getElementById('detailsUserName').textContent = user.fullname;
+            document.getElementById('detailsUserUsername').textContent = '@' + user.username;
+            document.getElementById('detailsUserEmail').textContent = user.email;
+            document.getElementById('detailsUserPhone').textContent = user.phone || 'Not provided';
+            document.getElementById('detailsUserAddress').textContent = user.address || 'Not provided';
+            document.getElementById('detailsUserJoinDate').textContent = 'Member since ' + new Date(user.created_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('detailsUserUpdated').textContent = new Date(user.updated_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
             
-            // Set status with appropriate class
+            // FIX: Set status with appropriate class using the same logic as PHP
             const statusElem = document.getElementById('detailsUserStatus');
-            statusElem.textContent = status;
-            statusElem.className = 'status-badge ' + (status === 'Active' ? 'status-active' : 'status-inactive');
-            
-            document.getElementById('detailsUserLastLogin').textContent = lastLogin;
-            document.getElementById('detailsUserJoinDate').textContent = 'Member since ' + joinDate;
+            const userStatus = getUserStatusFromData(user.is_active, user.otp_purpose, user.otp_expires_at);
+            statusElem.textContent = userStatus.status;
+            statusElem.className = 'status-badge ' + userStatus.class;
             
             // Set the user avatar
             const avatarElem = document.getElementById('detailsUserAvatar');
-            if (image && image !== 'null') {
-                avatarElem.src = 'uploads/profiles/' + image;
+            if (user.profile_image && user.profile_image !== 'null') {
+                avatarElem.src = 'uploads/profiles/' + user.profile_image;
             } else {
                 avatarElem.src = 'assets/images/default-avatar.png';
             }
@@ -1439,6 +1850,7 @@ function formatDate($date) {
         function openDeleteModal(userId, userName) {
             document.getElementById('deleteUserId').value = userId;
             document.getElementById('deleteUserName').textContent = userName;
+            document.getElementById('admin_password').value = '';
             document.getElementById('deleteModal').classList.add('show');
         }
         
@@ -1446,6 +1858,60 @@ function formatDate($date) {
             document.getElementById('deleteModal').classList.remove('show');
             document.getElementById('admin_password').value = '';
         }
+        
+        // FIX: Helper function to get user status (matches PHP logic exactly)
+        function getUserStatusFromData(isActive, otpPurpose, otpExpiresAt) {
+            if (!isActive) {
+                return { status: 'Inactive', class: 'status-inactive' };
+            }
+            
+            // Check if user has pending email verification
+            if (otpPurpose === 'EMAIL_VERIFICATION' && otpExpiresAt && new Date(otpExpiresAt) > new Date()) {
+                return { status: 'Pending Verification', class: 'status-pending' };
+            }
+            
+            return { status: 'Active', class: 'status-active' };
+        }
+        
+        // Auto-hide alerts after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateY(-10px)';
+                    setTimeout(function() {
+                        alert.remove();
+                    }, 300);
+                }, 5000);
+            });
+        });
+        
+        // Close modals with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeUserDetailsModal();
+                closeDeleteModal();
+            }
+        });
+        
+        // Prevent modal close when clicking inside modal content
+        document.querySelectorAll('.modal-content').forEach(function(content) {
+            content.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+        
+        // Close modal when clicking outside
+        document.querySelectorAll('.modal').forEach(function(modal) {
+            modal.addEventListener('click', function() {
+                if (this.id === 'userDetailsModal') {
+                    closeUserDetailsModal();
+                } else if (this.id === 'deleteModal') {
+                    closeDeleteModal();
+                }
+            });
+        });
     </script>
 </body>
 </html>

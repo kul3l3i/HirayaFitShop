@@ -1,12 +1,81 @@
+<?php
+
+
+session_start();
+include 'db_connect.php';
+// Initialize variables
+$error = '';
+$username_email = '';
+
+// Check if the user is logged in
+if (!isset($_SESSION['admin_id'])) {
+    // Redirect to login page if not logged in
+    header("Location: sign-in.php");
+    exit;
+}
+
+// Get admin information from the database
+$admin_id = $_SESSION['admin_id'];
+$stmt = $conn->prepare("SELECT admin_id, username, fullname, email, profile_image, role FROM admins WHERE admin_id = ? AND is_active = TRUE");
+$stmt->bind_param("i", $admin_id);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows === 0) {
+    // Admin not found or not active, destroy session and redirect to login
+    session_destroy();
+    header("Location: sign-in.php");
+    exit;
+}
+
+// Get admin details
+$admin = $result->fetch_assoc();
+
+// Set default role if not present
+if (!isset($admin['role'])) {
+    $admin['role'] = 'Administrator';
+}
+
+// Update last login time
+$update_stmt = $conn->prepare("UPDATE admins SET last_login = CURRENT_TIMESTAMP WHERE admin_id = ?");
+$update_stmt->bind_param("i", $admin_id);
+$update_stmt->execute();
+$update_stmt->close();
+
+// Handle logout
+if (isset($_GET['logout'])) {
+    session_destroy();
+    header("Location: sign-in.php");
+    exit;
+}
+
+// Function to get profile image URL
+function getProfileImageUrl($profileImage) {
+    if (!empty($profileImage) && file_exists("uploads/profiles/" . $profileImage)) {
+        return "uploads/profiles/" . $profileImage;
+    } else {
+        return "assets/images/default-avatar.png"; // Default image path
+    }
+}
+
+// Get profile image URL
+$profileImageUrl = getProfileImageUrl($admin['profile_image']);
+
+// Close the statement
+$stmt->close();
+?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HirayaFit - Reports & Analytics</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Fixed jsPDF loading with proper version and autoTable plugin -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
             --primary: #111111;
@@ -21,14 +90,14 @@
             --warning: #ffc107;
             --info: #17a2b8;
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
+
         body {
             background-color: #f8f9fa;
             display: flex;
@@ -46,7 +115,7 @@
             transition: all 0.3s ease;
             z-index: 1000;
         }
-        
+
         .sidebar-header {
             padding: 20px;
             display: flex;
@@ -54,7 +123,7 @@
             justify-content: space-between;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
+
         .sidebar-logo {
             font-size: 22px;
             font-weight: 700;
@@ -62,11 +131,11 @@
             text-decoration: none;
             letter-spacing: -0.5px;
         }
-        
+
         .sidebar-logo span {
             color: var(--secondary);
         }
-        
+
         .sidebar-close {
             color: white;
             background: none;
@@ -75,11 +144,11 @@
             cursor: pointer;
             display: none;
         }
-        
+
         .sidebar-menu {
             padding: 20px 0;
         }
-        
+
         .menu-title {
             font-size: 12px;
             text-transform: uppercase;
@@ -87,7 +156,7 @@
             padding: 10px 20px;
             margin-top: 10px;
         }
-        
+
         .sidebar-menu a {
             display: flex;
             align-items: center;
@@ -97,36 +166,36 @@
             transition: all 0.3s ease;
             font-size: 14px;
         }
-        
+
         .sidebar-menu a:hover {
             background-color: rgba(255, 255, 255, 0.08);
             color: var(--secondary);
         }
-        
+
         .sidebar-menu a.active {
             background-color: rgba(255, 255, 255, 0.08);
             border-left: 3px solid var(--secondary);
             color: var(--secondary);
         }
-        
+
         .sidebar-menu a i {
             margin-right: 10px;
             font-size: 16px;
             width: 20px;
             text-align: center;
         }
-        
+
         /* Main Content Area */
         .main-content {
             flex: 1;
             margin-left: var(--sidebar-width);
             transition: all 0.3s ease;
         }
-        
+
         /* Top Navigation */
         .top-navbar {
             background-color: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
             padding: 15px 20px;
             display: flex;
             justify-content: space-between;
@@ -135,7 +204,7 @@
             top: 0;
             z-index: 100;
         }
-        
+
         .toggle-sidebar {
             background: none;
             border: none;
@@ -144,41 +213,41 @@
             cursor: pointer;
             display: none;
         }
-        
+
         .nav-left {
             display: flex;
             align-items: center;
         }
-        
+
         .navbar-title {
             font-weight: 600;
             color: var(--dark);
             font-size: 18px;
             margin-right: 20px;
         }
-        
+
         .welcome-text {
             font-size: 14px;
             color: var(--grey);
         }
-        
+
         .welcome-text strong {
             color: var(--dark);
             font-weight: 600;
         }
-        
+
         .navbar-actions {
             display: flex;
             align-items: center;
         }
-        
+
         .navbar-actions .nav-link {
             color: var(--dark);
             font-size: 18px;
             margin-right: 20px;
             position: relative;
         }
-        
+
         .notification-count {
             position: absolute;
             top: -5px;
@@ -193,7 +262,7 @@
             justify-content: center;
             align-items: center;
         }
-        
+
         /* Admin Profile Styles */
         .admin-profile {
             display: flex;
@@ -247,7 +316,7 @@
             top: 45px;
             background-color: white;
             min-width: 220px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             z-index: 1000;
             border-radius: 4px;
             overflow: hidden;
@@ -259,7 +328,7 @@
             padding: 10px 15px;
             display: flex;
             align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .admin-dropdown-avatar-container {
@@ -336,7 +405,7 @@
         .admin-dropdown.show .admin-dropdown-content {
             display: block;
         }
-        
+
         /* Dashboard Container */
         .dashboard-container {
             padding: 30px;
@@ -403,12 +472,30 @@
             background-color: #f8f9fa;
         }
 
+        .btn-reset {
+            background-color: var(--grey);
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background-color: #5a6268;
+        }
+
+        .btn-refresh {
+            background-color: var(--info);
+            color: white;
+        }
+
+        .btn-refresh:hover {
+            background-color: #138496;
+        }
+
         /* Filter Section */
         .filter-section {
             background: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 30px;
         }
 
@@ -457,7 +544,7 @@
             background: white;
             padding: 25px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             position: relative;
             overflow: hidden;
         }
@@ -558,7 +645,7 @@
             background: white;
             padding: 25px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .chart-title {
@@ -577,7 +664,7 @@
         .table-section {
             background: white;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             margin-bottom: 30px;
         }
@@ -650,91 +737,173 @@
             color: #721c24;
         }
 
+        .status-processing {
+            background-color: rgb(219, 190, 228);
+            color: rgb(85, 30, 122);
+        }
+
+        /* PDF Export Loading */
+        .pdf-loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            text-align: center;
+            display: none;
+        }
+
+        .pdf-loading.show {
+            display: block;
+        }
+
+        /* Last Updated Indicator */
+        .last-updated {
+            font-size: 12px;
+            color: var(--grey);
+            margin-bottom: 15px;
+            text-align: right;
+        }
+
+        .last-updated.updated {
+            color: var(--success);
+        }
+
         /* Responsive Design */
         @media (max-width: 992px) {
             .welcome-text {
                 display: none;
             }
-            
+
             .filter-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .charts-section {
                 grid-template-columns: 1fr;
             }
         }
-        
+
         @media (max-width: 768px) {
             .sidebar {
                 width: 0;
                 transform: translateX(-100%);
             }
-            
+
             .sidebar.active {
                 width: var(--sidebar-width);
                 transform: translateX(0);
             }
-            
+
             .sidebar-close {
                 display: block;
             }
-            
+
             .main-content {
                 margin-left: 0;
             }
-            
+
             .toggle-sidebar {
                 display: block;
             }
-            
+
             .navbar-title {
                 display: none;
             }
-            
+
             .page-header {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 15px;
             }
-            
+
             .export-controls {
                 width: 100%;
                 justify-content: stretch;
             }
-            
+
             .export-controls .btn {
                 flex: 1;
                 justify-content: center;
             }
-            
+
             .stats-grid {
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Loading indicator */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--secondary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
+
 <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- PDF Loading Overlay -->
+    <div class="pdf-loading" id="pdfLoading">
+        <div class="spinner" style="margin: 0 auto 20px;"></div>
+        <h3>Generating PDF Report...</h3>
+        <p>Please wait while we prepare your report.</p>
+    </div>
+
     <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-header">
             <a href="dashboard.php" class="sidebar-logo">Hiraya<span>Fit</span></a>
             <button class="sidebar-close" id="sidebarClose"><i class="fas fa-times"></i></button>
         </div>
-        
+
         <div class="sidebar-menu">
             <div class="menu-title">MAIN</div>
             <a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
             <a href="orders_admin.php"><i class="fas fa-shopping-cart"></i> Orders</a>
             <a href="payment-history.php"><i class="fas fa-money-check-alt"></i> Payment History</a>
-            
+
             <div class="menu-title">INVENTORY</div>
             <a href="products.php"><i class="fas fa-tshirt"></i> Products & Categories</a>
             <a href="stock.php"><i class="fas fa-box"></i> Stock Management</a>
-            
+
             <div class="menu-title">USERS</div>
             <a href="users.php"><i class="fas fa-users"></i> User Management</a>
-            
+
             <div class="menu-title">REPORTS & SETTINGS</div>
             <a href="reports.php" class="active"><i class="fas fa-file-pdf"></i> Reports & Analytics</a>
             <a href="settings.php"><i class="fas fa-cog"></i> System Settings</a>
@@ -750,7 +919,7 @@
                 <span class="navbar-title">Reports & Analytics</span>
                 <div class="welcome-text">Comprehensive business insights</div>
             </div>
-            
+
             <div class="navbar-actions">
                 <a href="notifications.php" class="nav-link">
                     <i class="fas fa-bell"></i>
@@ -760,31 +929,31 @@
                     <i class="fas fa-envelope"></i>
                     <span class="notification-count">5</span>
                 </a>
-                
+
                 <div class="admin-dropdown" id="adminDropdown">
                     <div class="admin-profile">
                         <div class="admin-avatar-container">
-                            <img src="https://via.placeholder.com/40x40/0071c5/ffffff?text=A" alt="Admin" class="admin-avatar">
+                            <img src="<?php echo htmlspecialchars($profileImageUrl); ?>" alt="Admin" class="admin-avatar">
                         </div>
                         <div class="admin-info">
-                            <span class="admin-name">Admin User</span>
-                            <span class="admin-role">Administrator</span>
+                            <span class="admin-name"><?php echo htmlspecialchars($admin['fullname']); ?></span>
+                            <span class="admin-role"><?php echo htmlspecialchars($admin['role']); ?></span>
                         </div>
                     </div>
-                    
+
                     <div class="admin-dropdown-content" id="adminDropdownContent">
                         <div class="admin-dropdown-header">
                             <div class="admin-dropdown-avatar-container">
-                                <img src="https://via.placeholder.com/50x50/0071c5/ffffff?text=A" alt="Admin" class="admin-dropdown-avatar">
+                                <img src="<?php echo htmlspecialchars($profileImageUrl); ?>" alt="Admin" class="admin-dropdown-avatar">
                             </div>
                             <div class="admin-dropdown-info">
-                                <span class="admin-dropdown-name">Admin User</span>
-                                <span class="admin-dropdown-role">Administrator</span>
+                                <span class="admin-dropdown-name"><?php echo htmlspecialchars($admin['fullname']); ?></span>
+                                <span class="admin-dropdown-role"><?php echo htmlspecialchars($admin['role']); ?></span>
                             </div>
                         </div>
                         <div class="admin-dropdown-user">
-                            <h4 class="admin-dropdown-user-name">Admin User</h4>
-                            <p class="admin-dropdown-user-email">admin@hirafit.com</p>
+                            <h4 class="admin-dropdown-user-name"><?php echo htmlspecialchars($admin['fullname']); ?></h4>
+                            <p class="admin-dropdown-user-email"><?php echo htmlspecialchars($admin['email']); ?></p>
                         </div>
                         <a href="profile.php"><i class="fas fa-user"></i> Profile Settings</a>
                        
@@ -800,6 +969,9 @@
             <div class="page-header">
                 <h1 class="page-title">Reports & Analytics</h1>
                 <div class="export-controls">
+                    <button class="btn btn-refresh" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i> Refresh Data
+                    </button>
                     <button class="btn btn-success" onclick="exportToPDF()">
                         <i class="fas fa-file-pdf"></i> Export PDF
                     </button>
@@ -809,6 +981,11 @@
                 </div>
             </div>
 
+            <!-- Last Updated Indicator -->
+            <div class="last-updated" id="lastUpdated">
+                Last updated: Loading...
+            </div>
+
             <!-- Filter Section -->
             <div class="filter-section">
                 <h3 class="filter-title">Filter Reports</h3>
@@ -816,12 +993,12 @@
                     <div class="form-group">
                         <label class="form-label">Date Range</label>
                         <select class="form-control" id="dateRange">
+                            <option value="all">All Time</option>
                             <option value="today">Today</option>
                             <option value="week">This Week</option>
                             <option value="month" selected>This Month</option>
                             <option value="quarter">This Quarter</option>
                             <option value="year">This Year</option>
-                            <option value="custom">Custom Range</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -831,6 +1008,7 @@
                             <option value="delivered">Delivered</option>
                             <option value="pending">Pending</option>
                             <option value="cancelled">Cancelled</option>
+                            <option value="processing">Processing</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -839,12 +1017,17 @@
                             <option value="all">All Methods</option>
                             <option value="gcash">GCash</option>
                             <option value="cod">Cash on Delivery</option>
-                            <option value="card">Credit/Debit Card</option>
+                            <option value="paymaya">Paymaya</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <button class="btn btn-primary" onclick="applyFilters()">
                             <i class="fas fa-filter"></i> Apply Filters
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-reset" onclick="resetFilters()">
+                            <i class="fas fa-undo"></i> Reset
                         </button>
                     </div>
                 </div>
@@ -859,9 +1042,9 @@
                             <i class="fas fa-dollar-sign"></i>
                         </div>
                     </div>
-                    <div class="stat-value">₱124,500</div>
+                    <div class="stat-value" id="totalRevenue">₱0</div>
                     <div class="stat-change positive">
-                        <i class="fas fa-arrow-up"></i> +12.5% from last month
+                        <i class="fas fa-arrow-up"></i> <span id="revenueChange">0%</span> from last month
                     </div>
                 </div>
 
@@ -872,9 +1055,9 @@
                             <i class="fas fa-shopping-cart"></i>
                         </div>
                     </div>
-                    <div class="stat-value">1,247</div>
+                    <div class="stat-value" id="totalOrders">0</div>
                     <div class="stat-change positive">
-                        <i class="fas fa-arrow-up"></i> +8.3% from last month
+                        <i class="fas fa-arrow-up"></i> <span id="ordersChange">0%</span> from last month
                     </div>
                 </div>
 
@@ -885,9 +1068,9 @@
                             <i class="fas fa-chart-line"></i>
                         </div>
                     </div>
-                    <div class="stat-value">₱1,598</div>
+                    <div class="stat-value" id="avgOrderValue">₱0</div>
                     <div class="stat-change positive">
-                        <i class="fas fa-arrow-up"></i> +5.2% from last month
+                        <i class="fas fa-arrow-up"></i> <span id="avgOrderChange">0%</span> from last month
                     </div>
                 </div>
 
@@ -898,9 +1081,9 @@
                             <i class="fas fa-users"></i>
                         </div>
                     </div>
-                    <div class="stat-value">892</div>
+                    <div class="stat-value" id="uniqueCustomers">0</div>
                     <div class="stat-change positive">
-                        <i class="fas fa-arrow-up"></i> +15.7% from last month
+                        <i class="fas fa-arrow-up"></i> <span id="customersChange">0%</span> from last month
                     </div>
                 </div>
             </div>
@@ -958,7 +1141,7 @@
                             </tr>
                         </thead>
                         <tbody id="transactionsTableBody">
-                            <!-- Sample data will be populated by JavaScript -->
+                            <!-- Will be populated by JavaScript -->
                         </tbody>
                     </table>
                 </div>
@@ -980,42 +1163,8 @@
                                 <th>Last Order</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>Lai Rodriguez</td>
-                                <td>rodriguez.elx@gmail.com</td>
-                                <td>15</td>
-                                <td>₱24,750</td>
-                                <td>2025-05-23</td>
-                            </tr>
-                            <tr>
-                                <td>Maria Santos</td>
-                                <td>maria.santos@email.com</td>
-                                <td>12</td>
-                                <td>₱18,900</td>
-                                <td>2025-05-22</td>
-                            </tr>
-                            <tr>
-                                <td>John Cruz</td>
-                                <td>john.cruz@email.com</td>
-                                <td>8</td>
-                                <td>₱12,400</td>
-                                <td>2025-05-21</td>
-                            </tr>
-                            <tr>
-                                <td>Ana Reyes</td>
-                                <td>ana.reyes@email.com</td>
-                                <td>10</td>
-                                <td>₱16,200</td>
-                                <td>2025-05-20</td>
-                            </tr>
-                            <tr>
-                                <td>Carlos Garcia</td>
-                                <td>carlos.garcia@email.com</td>
-                                <td>6</td>
-                                <td>₱9,300</td>
-                                <td>2025-05-19</td>
-                            </tr>
+                        <tbody id="topCustomersTableBody">
+                            <!-- Will be populated by JavaScript -->
                         </tbody>
                     </table>
                 </div>
@@ -1024,96 +1173,290 @@
     </div>
 
     <script>
-        // Global variable to store transactions data
+        // Global variables to store data and chart instances
         let transactionsData = [];
+        let originalTransactionsData = [];
+        let chartInstances = {}; // Store chart instances for proper destruction
+        let lastLoadTime = null;
 
         // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-            loadTransactionsFromXML().then(() => {
-                initializeCharts();
-                populateTransactionsTable();
-                setupEventListeners();
-            }).catch(error => {
-                console.error('Error loading transactions:', error);
-                // Fallback to sample data if XML loading fails
-                loadSampleData();
-                initializeCharts();
-                populateTransactionsTable();
-                setupEventListeners();
-            });
+        document.addEventListener('DOMContentLoaded', function () {
+            showLoading();
+            loadDataWithCacheBusting();
         });
 
-        // Load transactions from XML file
+        // Main data loading function with cache busting
+        async function loadDataWithCacheBusting() {
+            try {
+                await loadTransactionsFromXML();
+                originalTransactionsData = JSON.parse(JSON.stringify(transactionsData));
+                updateStatistics();
+                initializeCharts();
+                populateTransactionsTable();
+                populateTopCustomersTable();
+                setupEventListeners();
+                updateLastUpdatedTime();
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+                loadSampleData();
+                originalTransactionsData = JSON.parse(JSON.stringify(transactionsData));
+                updateStatistics();
+                initializeCharts();
+                populateTransactionsTable();
+                populateTopCustomersTable();
+                setupEventListeners();
+                updateLastUpdatedTime();
+                hideLoading();
+            }
+        }
+
+        // Refresh data function
+        async function refreshData() {
+            showLoading();
+            
+            // Clear any cached data
+            if ('caches' in window) {
+                caches.delete('transaction-cache');
+            }
+            
+            try {
+                await loadTransactionsFromXML();
+                originalTransactionsData = JSON.parse(JSON.stringify(transactionsData));
+                
+                // Reset filters to show all data
+                document.getElementById('dateRange').value = 'month';
+                document.getElementById('statusFilter').value = 'all';
+                document.getElementById('paymentFilter').value = 'all';
+                
+                updateStatistics();
+                initializeCharts();
+                populateTransactionsTable();
+                populateTopCustomersTable();
+                updateLastUpdatedTime();
+                
+                // Show success message
+                const lastUpdatedEl = document.getElementById('lastUpdated');
+                lastUpdatedEl.classList.add('updated');
+                setTimeout(() => {
+                    lastUpdatedEl.classList.remove('updated');
+                }, 3000);
+                
+                hideLoading();
+                console.log('Data refreshed successfully');
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                hideLoading();
+                alert('Error refreshing data. Please try again.');
+            }
+        }
+
+        // Update last updated time
+        function updateLastUpdatedTime() {
+            lastLoadTime = new Date();
+            const lastUpdatedEl = document.getElementById('lastUpdated');
+            lastUpdatedEl.textContent = `Last updated: ${lastLoadTime.toLocaleString()}`;
+        }
+
+        // Show/Hide loading overlay
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // Show/Hide PDF loading
+        function showPDFLoading() {
+            document.getElementById('pdfLoading').classList.add('show');
+        }
+
+        function hidePDFLoading() {
+            document.getElementById('pdfLoading').classList.remove('show');
+        }
+
+        // Load transactions from XML file with cache busting
         async function loadTransactionsFromXML() {
             try {
-                const response = await fetch('transac.xml');
-                const xmlText = await response.text();
+                console.log('Attempting to load data from transaction.xml...');
+
+                // Add cache busting parameters
+                const timestamp = new Date().getTime();
+                const randomParam = Math.random().toString(36).substring(7);
+                
+                const possiblePaths = [
+                    `transaction.xml?t=${timestamp}&r=${randomParam}`,
+                    `./transaction.xml?t=${timestamp}&r=${randomParam}`,
+                    `../transaction.xml?t=${timestamp}&r=${randomParam}`,
+                    `data/transaction.xml?t=${timestamp}&r=${randomParam}`
+                ];
+
+                let response = null;
+                let xmlText = null;
+
+                for (const path of possiblePaths) {
+                    try {
+                        console.log(`Trying to load from: ${path}`);
+                        
+                        // Use fetch with cache-busting headers
+                        response = await fetch(path, {
+                            method: 'GET',
+                            headers: {
+                                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                                'Pragma': 'no-cache',
+                                'Expires': '0'
+                            },
+                            cache: 'no-store'
+                        });
+                        
+                        if (response.ok) {
+                            xmlText = await response.text();
+                            console.log(`Successfully loaded XML from: ${path}`);
+                            break;
+                        }
+                    } catch (pathError) {
+                        console.log(`Failed to load from ${path}:`, pathError.message);
+                        continue;
+                    }
+                }
+
+                if (!response || !response.ok || !xmlText) {
+                    throw new Error(`Failed to fetch transaction.xml from any path. Status: ${response ? response.status : 'No response'}`);
+                }
+
+                console.log('XML file loaded successfully, content length:', xmlText.length);
+
                 const parser = new DOMParser();
                 const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-                
-                // Check for parsing errors
+
                 const parserError = xmlDoc.querySelector('parsererror');
                 if (parserError) {
+                    console.error('XML parsing error:', parserError.textContent);
                     throw new Error('XML parsing error: ' + parserError.textContent);
                 }
-                
-                // Parse transactions from XML
-                const transactions = xmlDoc.querySelectorAll('transaction');
+
+                let transactions = xmlDoc.querySelectorAll('transaction');
+                if (transactions.length === 0) {
+                    transactions = xmlDoc.querySelectorAll('transactions transaction');
+                    if (transactions.length === 0) {
+                        transactions = xmlDoc.querySelectorAll('root transaction');
+                        if (transactions.length === 0) {
+                            transactions = xmlDoc.querySelectorAll('data transaction');
+                        }
+                    }
+                }
+
+                if (transactions.length === 0) {
+                    throw new Error('No transactions found in the XML file. Please check the XML structure.');
+                }
+
+                console.log(`Found ${transactions.length} transactions in XML file`);
+
                 transactionsData = [];
-                
-                transactions.forEach(transaction => {
-                    const transactionObj = {
-                        transaction_id: getXMLValue(transaction, 'transaction_id'),
-                        user_id: parseInt(getXMLValue(transaction, 'user_id')),
-                        customer_name: getXMLValue(transaction, 'customer_name'),
-                        customer_email: getXMLValue(transaction, 'customer_email'),
-                        transaction_date: getXMLValue(transaction, 'transaction_date'),
-                        status: getXMLValue(transaction, 'status'),
-                        payment_method: getXMLValue(transaction, 'payment_method'),
-                        subtotal: parseFloat(getXMLValue(transaction, 'subtotal')),
-                        shipping_fee: parseFloat(getXMLValue(transaction, 'shipping_fee')),
-                        total_amount: parseFloat(getXMLValue(transaction, 'total_amount')),
-                        items: []
-                    };
-                    
-                    // Parse items
-                    const items = transaction.querySelectorAll('item');
-                    items.forEach(item => {
-                        transactionObj.items.push({
-                            product_name: getXMLValue(item, 'product_name'),
-                            price: parseFloat(getXMLValue(item, 'price')),
-                            quantity: parseInt(getXMLValue(item, 'quantity')),
-                            color: getXMLValue(item, 'color'),
-                            size: getXMLValue(item, 'size')
+
+                transactions.forEach((transaction, index) => {
+                    try {
+                        // Get shipping info first
+                        const shippingInfo = transaction.querySelector('shipping_info');
+                        let customerName = 'Unknown Customer';
+                        let customerEmail = 'unknown@email.com';
+                        
+                        if (shippingInfo) {
+                            customerName = getXMLValue(shippingInfo, 'fullname') || 'Unknown Customer';
+                            customerEmail = getXMLValue(shippingInfo, 'email') || 'unknown@email.com';
+                        }
+
+                        const transactionObj = {
+                            transaction_id: getXMLValue(transaction, 'transaction_id') || `TRX-${Date.now()}-${index}`,
+                            user_id: parseInt(getXMLValue(transaction, 'user_id') || '0'),
+                            customer_name: customerName,
+                            customer_email: customerEmail,
+                            transaction_date: getXMLValue(transaction, 'transaction_date') || new Date().toISOString(),
+                            status: getXMLValue(transaction, 'status') || 'pending',
+                            payment_method: getXMLValue(transaction, 'payment_method') || 'unknown',
+                            subtotal: parseFloat(getXMLValue(transaction, 'subtotal') || '0'),
+                            shipping_fee: parseFloat(getXMLValue(transaction, 'shipping_fee') || '0'),
+                            total_amount: parseFloat(getXMLValue(transaction, 'total_amount') || '0'),
+                            items: []
+                        };
+
+                        let items = transaction.querySelectorAll('item');
+                        if (items.length === 0) {
+                            items = transaction.querySelectorAll('items item');
+                            if (items.length === 0) {
+                                items = transaction.querySelectorAll('products product');
+                            }
+                        }
+
+                        items.forEach((item, itemIndex) => {
+                            const itemObj = {
+                                product_id: parseInt(getXMLValue(item, 'product_id') || '0'),
+                                product_name: getXMLValue(item, 'product_name') || 'Unknown Product',
+                                price: parseFloat(getXMLValue(item, 'price') || '0'),
+                                quantity: parseInt(getXMLValue(item, 'quantity') || '1'),
+                                color: getXMLValue(item, 'color') || 'N/A',
+                                size: getXMLValue(item, 'size') || 'N/A'
+                            };
+
+                            transactionObj.items.push(itemObj);
                         });
-                    });
-                    
-                    transactionsData.push(transactionObj);
+
+                        transactionsData.push(transactionObj);
+
+                    } catch (itemError) {
+                        console.error(`Error processing transaction ${index + 1}:`, itemError);
+                    }
                 });
-                
-                console.log('Loaded', transactionsData.length, 'transactions from XML');
-                
+
+                console.log('Successfully loaded', transactionsData.length, 'transactions from XML');
+
+                if (transactionsData.length === 0) {
+                    throw new Error('Failed to parse any valid transactions from the XML file');
+                }
+
+                return transactionsData;
+
             } catch (error) {
-                console.error('Error loading XML:', error);
-                throw error;
+                console.error('Error loading transaction.xml:', error);
+                throw error; // Re-throw to trigger fallback
             }
         }
 
         // Helper function to get XML element value
         function getXMLValue(parent, tagName) {
-            const element = parent.querySelector(tagName);
-            return element ? element.textContent.trim() : '';
+            try {
+                let element = parent.querySelector(tagName);
+
+                if (!element) {
+                    const allElements = parent.querySelectorAll('*');
+                    for (const el of allElements) {
+                        if (el.tagName.toLowerCase() === tagName.toLowerCase()) {
+                            element = el;
+                            break;
+                        }
+                    }
+                }
+
+                const value = element ? element.textContent.trim() : '';
+                return value;
+            } catch (error) {
+                console.error(`Error getting XML value for ${tagName}:`, error);
+                return '';
+            }
         }
 
-        // Fallback sample data (in case XML loading fails)
+        // Fallback sample data
         function loadSampleData() {
+            console.log('Loading sample data as fallback...');
+            
             transactionsData = [
                 {
-                    transaction_id: 'TRX-683014A91A92D',
-                    user_id: 2,
-                    customer_name: 'Lai Rodriguez',
-                    customer_email: 'rodriguez.elx@gmail.com',
-                    transaction_date: '2025-05-23 08:24:41',
+                    transaction_id: 'TRX-2024-001',
+                    user_id: 1,
+                    customer_name: 'John Doe',
+                    customer_email: 'john.doe@email.com',
+                    transaction_date: '2024-01-15T10:30:00Z',
                     status: 'delivered',
                     payment_method: 'gcash',
                     subtotal: 1500,
@@ -1121,93 +1464,142 @@
                     total_amount: 1600,
                     items: [
                         {
-                            product_name: "Women's High-Waist Leggings",
-                            price: 1500,
-                            quantity: 1,
-                            color: 'black',
+                            product_id: 1,
+                            product_name: 'HirayaFit Athletic Shirt',
+                            price: 750,
+                            quantity: 2,
+                            color: 'Blue',
+                            size: 'M'
+                        }
+                    ]
+                },
+                {
+                    transaction_id: 'TRX-2024-002',
+                    user_id: 2,
+                    customer_name: 'Jane Smith',
+                    customer_email: 'jane.smith@email.com',
+                    transaction_date: '2024-01-16T14:20:00Z',
+                    status: 'pending',
+                    payment_method: 'cod',
+                    subtotal: 2200,
+                    shipping_fee: 150,
+                    total_amount: 2350,
+                    items: [
+                        {
+                            product_id: 2,
+                            product_name: 'HirayaFit Leggings',
+                            price: 1100,
+                            quantity: 2,
+                            color: 'Black',
                             size: 'S'
                         }
                     ]
                 },
                 {
-                    transaction_id: 'TRX-683014A91A93E',
+                    transaction_id: 'TRX-2024-003',
                     user_id: 3,
-                    customer_name: 'Maria Santos',
-                    customer_email: 'maria.santos@email.com',
-                    transaction_date: '2025-05-22 14:30:15',
-                    status: 'pending',
-                    payment_method: 'cod',
-                    subtotal: 2400,
-                    shipping_fee: 100,
-                    total_amount: 2500,
+                    customer_name: 'Mike Johnson',
+                    customer_email: 'mike.johnson@email.com',
+                    transaction_date: '2024-01-17T09:15:00Z',
+                    status: 'delivered',
+                    payment_method: 'paymaya',
+                    subtotal: 1800,
+                    shipping_fee: 120,
+                    total_amount: 1920,
                     items: [
                         {
-                            product_name: "Men's Athletic Shorts",
-                            price: 1200,
+                            product_id: 3,
+                            product_name: 'HirayaFit Sports Bra',
+                            price: 900,
                             quantity: 2,
-                            color: 'blue',
+                            color: 'Pink',
                             size: 'M'
                         }
                     ]
                 }
             ];
+
+            return transactionsData;
+        }
+
+        // Calculate and update statistics
+        function updateStatistics() {
+            const totalRevenue = transactionsData
+                .filter(t => t.status === 'delivered')
+                .reduce((sum, t) => sum + t.total_amount, 0);
+
+            const totalOrders = transactionsData.length;
+            const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+            const uniqueCustomers = new Set(transactionsData.map(t => t.customer_email)).size;
+
+            document.getElementById('totalRevenue').textContent = `₱${totalRevenue.toLocaleString()}`;
+            document.getElementById('totalOrders').textContent = totalOrders.toLocaleString();
+            document.getElementById('avgOrderValue').textContent = `₱${avgOrderValue.toFixed(2)}`;
+            document.getElementById('uniqueCustomers').textContent = uniqueCustomers.toLocaleString();
+
+            // Sample growth percentages
+            document.getElementById('revenueChange').textContent = '12.5%';
+            document.getElementById('ordersChange').textContent = '8.3%';
+            document.getElementById('avgOrderChange').textContent = '5.2%';
+            document.getElementById('customersChange').textContent = '15.7%';
         }
 
         // Setup event listeners
         function setupEventListeners() {
-            // Admin dropdown toggle
             const adminDropdown = document.getElementById('adminDropdown');
-            const adminDropdownContent = document.getElementById('adminDropdownContent');
-            
             if (adminDropdown) {
-                adminDropdown.addEventListener('click', function(e) {
+                adminDropdown.addEventListener('click', function (e) {
                     e.stopPropagation();
                     adminDropdown.classList.toggle('show');
                 });
             }
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
+
+            document.addEventListener('click', function (e) {
                 if (adminDropdown && !adminDropdown.contains(e.target)) {
                     adminDropdown.classList.remove('show');
                 }
             });
-            
-            // Sidebar toggle for responsive design
+
             const toggleSidebar = document.getElementById('toggleSidebar');
             const sidebarClose = document.getElementById('sidebarClose');
             const sidebar = document.querySelector('.sidebar');
-            
+
             if (toggleSidebar && sidebar) {
-                toggleSidebar.addEventListener('click', function() {
+                toggleSidebar.addEventListener('click', function () {
                     sidebar.classList.toggle('active');
                 });
             }
-            
+
             if (sidebarClose && sidebar) {
-                sidebarClose.addEventListener('click', function() {
+                sidebarClose.addEventListener('click', function () {
                     sidebar.classList.remove('active');
                 });
             }
         }
 
-        // Initialize all charts with dynamic data
+        // Initialize all charts
         function initializeCharts() {
-            initializeRevenueChart();
-            initializeStatusChart();
-            initializePaymentChart();
-            initializeProductsChart();
+            Object.values(chartInstances).forEach(chart => {
+                if (chart && typeof chart.destroy === 'function') {
+                    chart.destroy();
+                }
+            });
+            chartInstances = {};
+
+            chartInstances.revenue = initializeRevenueChart();
+            chartInstances.status = initializeStatusChart();
+            chartInstances.payment = initializePaymentChart();
+            chartInstances.products = initializeProductsChart();
         }
 
-        // Revenue Trend Chart - calculate from actual data
+        // Revenue Trend Chart
         function initializeRevenueChart() {
             const ctx = document.getElementById('revenueChart');
-            if (!ctx) return;
-            
-            // Calculate monthly revenue from transactions
+            if (!ctx) return null;
+
             const monthlyRevenue = calculateMonthlyRevenue();
-            
-            new Chart(ctx.getContext('2d'), {
+
+            return new Chart(ctx.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
@@ -1233,7 +1625,7 @@
                         y: {
                             beginAtZero: true,
                             ticks: {
-                                callback: function(value) {
+                                callback: function (value) {
                                     return '₱' + value.toLocaleString();
                                 }
                             }
@@ -1243,10 +1635,10 @@
             });
         }
 
-        // Calculate monthly revenue from transactions
+        // Calculate monthly revenue
         function calculateMonthlyRevenue() {
             const monthlyData = new Array(12).fill(0);
-            
+
             transactionsData.forEach(transaction => {
                 if (transaction.status === 'delivered') {
                     const date = new Date(transaction.transaction_date);
@@ -1254,24 +1646,24 @@
                     monthlyData[month] += transaction.total_amount;
                 }
             });
-            
+
             return monthlyData;
         }
 
-        // Order Status Chart - calculate from actual data
+        // Order Status Chart
         function initializeStatusChart() {
             const ctx = document.getElementById('statusChart');
-            if (!ctx) return;
-            
+            if (!ctx) return null;
+
             const statusCounts = calculateStatusCounts();
-            
-            new Chart(ctx.getContext('2d'), {
+
+            return new Chart(ctx.getContext('2d'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Delivered', 'Pending', 'Cancelled'],
+                    labels: ['Delivered', 'Pending', 'Cancelled', 'Processing'],
                     datasets: [{
-                        data: [statusCounts.delivered, statusCounts.pending, statusCounts.cancelled],
-                        backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                        data: [statusCounts.delivered, statusCounts.pending, statusCounts.cancelled, statusCounts.processing],
+                        backgroundColor: ['#28a745', '#ffc107', '#dc3545', '#6f42c1'],
                         borderWidth: 0
                     }]
                 },
@@ -1289,30 +1681,30 @@
 
         // Calculate status counts
         function calculateStatusCounts() {
-            const counts = { delivered: 0, pending: 0, cancelled: 0 };
-            
+            const counts = { delivered: 0, pending: 0, cancelled: 0, processing: 0 };
+
             transactionsData.forEach(transaction => {
                 if (counts.hasOwnProperty(transaction.status)) {
                     counts[transaction.status]++;
                 }
             });
-            
+
             return counts;
         }
 
-        // Payment Methods Chart - calculate from actual data
+        // Payment Methods Chart
         function initializePaymentChart() {
             const ctx = document.getElementById('paymentChart');
-            if (!ctx) return;
-            
+            if (!ctx) return null;
+
             const paymentCounts = calculatePaymentCounts();
-            
-            new Chart(ctx.getContext('2d'), {
+
+            return new Chart(ctx.getContext('2d'), {
                 type: 'pie',
                 data: {
-                    labels: ['GCash', 'Cash on Delivery', 'Credit/Debit Card'],
+                    labels: ['GCash', 'Cash on Delivery', 'Paymaya'],
                     datasets: [{
-                        data: [paymentCounts.gcash, paymentCounts.cod, paymentCounts.card],
+                        data: [paymentCounts.gcash, paymentCounts.cod, paymentCounts.paymaya],
                         backgroundColor: ['#0071c5', '#17a2b8', '#6f42c1'],
                         borderWidth: 0
                     }]
@@ -1331,26 +1723,26 @@
 
         // Calculate payment method counts
         function calculatePaymentCounts() {
-            const counts = { gcash: 0, cod: 0, card: 0 };
-            
+            const counts = { gcash: 0, cod: 0, paymaya: 0 };
+
             transactionsData.forEach(transaction => {
                 const method = transaction.payment_method.toLowerCase();
                 if (method === 'gcash') counts.gcash++;
                 else if (method === 'cod' || method === 'cash on delivery') counts.cod++;
-                else if (method === 'card' || method === 'credit card' || method === 'debit card') counts.card++;
+                else if (method === 'paymaya') counts.paymaya++;
             });
-            
+
             return counts;
         }
 
-        // Top Products Chart - calculate from actual data
+        // Top Products Chart
         function initializeProductsChart() {
             const ctx = document.getElementById('productsChart');
-            if (!ctx) return;
-            
+            if (!ctx) return null;
+
             const productData = calculateTopProducts();
-            
-            new Chart(ctx.getContext('2d'), {
+
+            return new Chart(ctx.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: productData.labels,
@@ -1381,7 +1773,7 @@
         // Calculate top products
         function calculateTopProducts() {
             const productCounts = {};
-            
+
             transactionsData.forEach(transaction => {
                 transaction.items.forEach(item => {
                     const productName = item.product_name;
@@ -1392,26 +1784,31 @@
                     }
                 });
             });
-            
-            // Sort products by quantity and get top 5
+
             const sortedProducts = Object.entries(productCounts)
-                .sort(([,a], [,b]) => b - a)
+                .sort(([, a], [, b]) => b - a)
                 .slice(0, 5);
-            
+
             return {
                 labels: sortedProducts.map(([name]) => name),
-                data: sortedProducts.map(([,count]) => count)
+                data: sortedProducts.map(([, count]) => count)
             };
         }
 
-        // Populate transactions table with dynamic data
+        // Populate transactions table
         function populateTransactionsTable() {
             const tbody = document.getElementById('transactionsTableBody');
             if (!tbody) return;
-            
+
             tbody.innerHTML = '';
 
-            transactionsData.forEach(transaction => {
+            const sortedTransactions = [...transactionsData].sort((a, b) => {
+                return new Date(b.transaction_date) - new Date(a.transaction_date);
+            });
+
+            const recentTransactions = sortedTransactions.slice(0, 10);
+
+            recentTransactions.forEach(transaction => {
                 const row = document.createElement('tr');
                 const date = new Date(transaction.transaction_date).toLocaleDateString();
                 const statusClass = `status-${transaction.status}`;
@@ -1431,148 +1828,428 @@
             });
         }
 
-        // Apply filters function - now works with dynamic data
-        function applyFilters() {
-            const dateRange = document.getElementById('dateRange')?.value;
-            const statusFilter = document.getElementById('statusFilter')?.value;
-            const paymentFilter = document.getElementById('paymentFilter')?.value;
+        // Populate top customers table
+        function populateTopCustomersTable() {
+            const tbody = document.getElementById('topCustomersTableBody');
+            if (!tbody) return;
 
-            // Filter the transactions data
-            let filteredData = [...transactionsData];
-            
-            // Apply status filter
-            if (statusFilter && statusFilter !== 'all') {
-                filteredData = filteredData.filter(t => t.status === statusFilter);
-            }
-            
-            // Apply payment method filter
-            if (paymentFilter && paymentFilter !== 'all') {
-                filteredData = filteredData.filter(t => t.payment_method === paymentFilter);
-            }
-            
-            // Apply date range filter
-            if (dateRange && dateRange !== 'all') {
-                const now = new Date();
-                let startDate = new Date();
-                
-                switch(dateRange) {
-                    case '7days':
-                        startDate.setDate(now.getDate() - 7);
-                        break;
-                    case '30days':
-                        startDate.setDate(now.getDate() - 30);
-                        break;
-                    case '90days':
-                        startDate.setDate(now.getDate() - 90);
-                        break;
+            tbody.innerHTML = '';
+
+            const customerStats = {};
+
+            transactionsData.forEach(transaction => {
+                const email = transaction.customer_email;
+
+                if (!customerStats[email]) {
+                    customerStats[email] = {
+                        name: transaction.customer_name,
+                        email: email,
+                        totalOrders: 0,
+                        totalSpent: 0,
+                        lastOrder: new Date(0)
+                    };
                 }
-                
-                filteredData = filteredData.filter(t => {
-                    const transactionDate = new Date(t.transaction_date);
-                    return transactionDate >= startDate;
-                });
-            }
-            
-            // Update the display with filtered data
-            const originalData = transactionsData;
-            transactionsData = filteredData;
-            
-            // Reinitialize charts and table with filtered data
+
+                customerStats[email].totalOrders++;
+                customerStats[email].totalSpent += transaction.total_amount;
+
+                const orderDate = new Date(transaction.transaction_date);
+                if (orderDate > customerStats[email].lastOrder) {
+                    customerStats[email].lastOrder = orderDate;
+                }
+            });
+
+            const sortedCustomers = Object.values(customerStats)
+                .sort((a, b) => b.totalSpent - a.totalSpent)
+                .slice(0, 5);
+
+            sortedCustomers.forEach(customer => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${customer.name}</td>
+                    <td>${customer.email}</td>
+                    <td>${customer.totalOrders}</td>
+                    <td>₱${customer.totalSpent.toLocaleString()}</td>
+                    <td>${customer.lastOrder.toLocaleDateString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Apply filters function
+        function applyFilters() {
+            showLoading();
+
+            setTimeout(() => {
+                try {
+                    const dateRange = document.getElementById('dateRange').value;
+                    const statusFilter = document.getElementById('statusFilter').value;
+                    const paymentFilter = document.getElementById('paymentFilter').value;
+
+                    let filteredData = JSON.parse(JSON.stringify(originalTransactionsData));
+
+                    // Apply date range filter
+                    if (dateRange !== 'all') {
+                        const now = new Date();
+                        let startDate = new Date();
+
+                        switch (dateRange) {
+                            case 'today':
+                                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                                break;
+                            case 'week':
+                                startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                                break;
+                            case 'month':
+                                startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+                                break;
+                            case 'quarter':
+                                startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+                                break;
+                            case 'year':
+                                startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+                                break;
+                        }
+
+                        filteredData = filteredData.filter(t => {
+                            const transactionDate = new Date(t.transaction_date);
+                            return transactionDate >= startDate;
+                        });
+                    }
+
+                    // Apply status filter
+                    if (statusFilter && statusFilter !== 'all') {
+                        filteredData = filteredData.filter(t => t.status === statusFilter);
+                    }
+
+                    // Apply payment method filter
+                    if (paymentFilter && paymentFilter !== 'all') {
+                        filteredData = filteredData.filter(t => t.payment_method.toLowerCase() === paymentFilter.toLowerCase());
+                    }
+
+                    transactionsData = filteredData;
+
+                    updateStatistics();
+                    initializeCharts();
+                    populateTransactionsTable();
+                    populateTopCustomersTable();
+
+                    console.log('Applied filters:', { dateRange, statusFilter, paymentFilter });
+                    console.log('Filtered results:', filteredData.length, 'transactions');
+
+                } catch (error) {
+                    console.error('Error applying filters:', error);
+                    alert('Error applying filters. Please try again.');
+                } finally {
+                    hideLoading();
+                }
+            }, 100);
+        }
+
+        // Reset filters function
+        function resetFilters() {
+            document.getElementById('dateRange').value = 'month';
+            document.getElementById('statusFilter').value = 'all';
+            document.getElementById('paymentFilter').value = 'all';
+
+            transactionsData = JSON.parse(JSON.stringify(originalTransactionsData));
+
+            updateStatistics();
             initializeCharts();
             populateTransactionsTable();
-            
-            // Restore original data
-            transactionsData = originalData;
-            
-            console.log('Applied filters:', { dateRange, statusFilter, paymentFilter });
-            console.log('Filtered results:', filteredData.length, 'transactions');
+            populateTopCustomersTable();
+
+            console.log('Filters reset, showing all data');
         }
 
-        // Export to PDF function - now uses dynamic data
+        // FIXED Export to PDF function
         function exportToPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            // Calculate summary statistics
-            const totalRevenue = transactionsData
-                .filter(t => t.status === 'delivered')
-                .reduce((sum, t) => sum + t.total_amount, 0);
-            const totalOrders = transactionsData.length;
-            const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-            const uniqueCustomers = new Set(transactionsData.map(t => t.customer_email)).size;
-            
-            // Add title
-            doc.setFontSize(20);
-            doc.text('HirayaFit - Sales Report', 20, 20);
-            
-            // Add date range
-            doc.setFontSize(12);
-            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 35);
-            
-            // Add summary statistics
-            doc.setFontSize(14);
-            doc.text('Summary Statistics', 20, 50);
-            doc.setFontSize(10);
-            doc.text(`Total Revenue: ₱${totalRevenue.toLocaleString()}`, 20, 65);
-            doc.text(`Total Orders: ${totalOrders.toLocaleString()}`, 20, 75);
-            doc.text(`Average Order Value: ₱${avgOrderValue.toFixed(2)}`, 20, 85);
-            doc.text(`Unique Customers: ${uniqueCustomers.toLocaleString()}`, 20, 95);
-            
-            // Add transactions table
-            doc.setFontSize(14);
-            doc.text('Recent Transactions', 20, 115);
-            
-            // Table headers
-            doc.setFontSize(8);
-            let yPos = 130;
-            doc.text('Transaction ID', 20, yPos);
-            doc.text('Customer', 70, yPos);
-            doc.text('Date', 110, yPos);
-            doc.text('Status', 140, yPos);
-            doc.text('Amount', 170, yPos);
-            
-            // Table data
-            yPos += 10;
-            transactionsData.forEach(transaction => {
-                if (yPos > 270) { // Start new page if needed
-                    doc.addPage();
-                    yPos = 20;
+            try {
+                // Check if jsPDF is available
+                if (typeof window.jspdf === 'undefined') {
+                    alert('PDF export library not loaded. Please refresh the page and try again.');
+                    return;
                 }
-                
-                doc.text(transaction.transaction_id.substring(0, 15) + '...', 20, yPos);
-                doc.text(transaction.customer_name, 70, yPos);
-                doc.text(new Date(transaction.transaction_date).toLocaleDateString(), 110, yPos);
-                doc.text(transaction.status, 140, yPos);
-                doc.text('₱' + transaction.total_amount.toLocaleString(), 170, yPos);
-                yPos += 8;
-            });
-            
-            // Save the PDF
-            doc.save('hirafit-sales-report.pdf');
+
+                showPDFLoading();
+
+                // Use setTimeout to ensure loading overlay shows
+                setTimeout(() => {
+                    try {
+                        const { jsPDF } = window.jspdf;
+                        const doc = new jsPDF();
+
+                        // Brand colors
+                        const primaryColor = [17, 17, 17]; // #111111
+                        const secondaryColor = [0, 113, 197]; // #0071c5
+                        const greyColor = [118, 118, 118]; // #767676
+                        const successColor = [40, 167, 69]; // #28a745
+
+                        // Calculate statistics
+                        const totalRevenue = transactionsData
+                            .filter(t => t.status === 'delivered')
+                            .reduce((sum, t) => sum + t.total_amount, 0);
+                        const totalOrders = transactionsData.length;
+                        const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+                        const uniqueCustomers = new Set(transactionsData.map(t => t.customer_email)).size;
+
+                        // Add header background
+                        doc.setFillColor(...primaryColor);
+                        doc.rect(0, 0, 210, 40, 'F');
+
+                        // Add logo/title
+                        doc.setTextColor(255, 255, 255);
+                        doc.setFontSize(24);
+                        doc.setFont(undefined, 'bold');
+                        doc.text('HirayaFit', 20, 20);
+
+                        doc.setTextColor(...secondaryColor);
+                        doc.text('Fit', 55, 20);
+
+                        doc.setTextColor(255, 255, 255);
+                        doc.setFontSize(16);
+                        doc.setFont(undefined, 'normal');
+                        doc.text('Sales Report & Analytics', 20, 30);
+
+                        // Add generation date
+                        doc.setTextColor(...greyColor);
+                        doc.setFontSize(10);
+                        doc.text(`Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 20, 50);
+
+                        // Add summary statistics section
+                        doc.setTextColor(...primaryColor);
+                        doc.setFontSize(16);
+                        doc.setFont(undefined, 'bold');
+                        doc.text('Executive Summary', 20, 65);
+
+                        // Statistics cards
+                        let yPos = 75;
+                        const cardHeight = 25;
+                        const cardWidth = 85;
+                        const cardSpacing = 10;
+
+                        // Revenue card
+                        doc.setFillColor(...secondaryColor);
+                        doc.rect(20, yPos, cardWidth, cardHeight, 'F');
+                        doc.setTextColor(255, 255, 255);
+                        doc.setFontSize(10);
+                        doc.text('Total Revenue', 25, yPos + 8);
+                        doc.setFontSize(14);
+                        doc.setFont(undefined, 'bold');
+                        doc.text(`₱${totalRevenue.toLocaleString()}`, 25, yPos + 18);
+
+                        // Orders card
+                        doc.setFillColor(...successColor);
+                        doc.rect(20 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 'F');
+                        doc.setTextColor(255, 255, 255);
+                        doc.setFontSize(10);
+                        doc.setFont(undefined, 'normal');
+                        doc.text('Total Orders', 25 + cardWidth + cardSpacing, yPos + 8);
+                        doc.setFontSize(14);
+                        doc.setFont(undefined, 'bold');
+                        doc.text(totalOrders.toString(), 25 + cardWidth + cardSpacing, yPos + 18);
+
+                        yPos += cardHeight + 15;
+
+                        // Average Order Value card
+                        doc.setFillColor(255, 193, 7); // Warning color
+                        doc.rect(20, yPos, cardWidth, cardHeight, 'F');
+                        doc.setTextColor(255, 255, 255);
+                        doc.setFontSize(10);
+                        doc.setFont(undefined, 'normal');
+                        doc.text('Avg Order Value', 25, yPos + 8);
+                        doc.setFontSize(14);
+                        doc.setFont(undefined, 'bold');
+                        doc.text(`₱${avgOrderValue.toFixed(2)}`, 25, yPos + 18);
+
+                        // Unique Customers card
+                        doc.setFillColor(23, 162, 184); // Info color
+                        doc.rect(20 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 'F');
+                        doc.setTextColor(255, 255, 255);
+                        doc.setFontSize(10);
+                        doc.setFont(undefined, 'normal');
+                        doc.text('Unique Customers', 25 + cardWidth + cardSpacing, yPos + 8);
+                        doc.setFontSize(14);
+                        doc.setFont(undefined, 'bold');
+                        doc.text(uniqueCustomers.toString(), 25 + cardWidth + cardSpacing, yPos + 18);
+
+                        yPos += cardHeight + 20;
+
+                        // Add transactions table section
+                        doc.setTextColor(...primaryColor);
+                        doc.setFontSize(16);
+                        doc.setFont(undefined, 'bold');
+                        doc.text('Recent Transactions', 20, yPos);
+
+                        yPos += 15;
+
+                        // Prepare table data for autoTable
+                        const tableData = [];
+                        const sortedTransactions = [...transactionsData].sort((a, b) => {
+                            return new Date(b.transaction_date) - new Date(a.transaction_date);
+                        });
+
+                        // Take only the most recent transactions that fit
+                        const maxTransactions = Math.min(sortedTransactions.length, 20);
+
+                        for (let i = 0; i < maxTransactions; i++) {
+                            const transaction = sortedTransactions[i];
+                            const date = new Date(transaction.transaction_date).toLocaleDateString();
+                            const itemsCount = transaction.items.length;
+                            const itemsText = itemsCount === 1 ? '1 item' : `${itemsCount} items`;
+
+                            tableData.push([
+                                transaction.transaction_id.substring(0, 15) + '...',
+                                transaction.customer_name.substring(0, 20),
+                                date,
+                                transaction.status.toUpperCase(),
+                                transaction.payment_method.toUpperCase(),
+                                `₱${transaction.total_amount.toLocaleString()}`,
+                                itemsText
+                            ]);
+                        }
+
+                        // Use autoTable if available, otherwise create manual table
+                        if (typeof doc.autoTable === 'function') {
+                            doc.autoTable({
+                                head: [['Transaction ID', 'Customer', 'Date', 'Status', 'Payment', 'Amount', 'Items']],
+                                body: tableData,
+                                startY: yPos,
+                                theme: 'grid',
+                                headStyles: {
+                                    fillColor: primaryColor,
+                                    textColor: [255, 255, 255],
+                                    fontSize: 9,
+                                    fontStyle: 'bold'
+                                },
+                                bodyStyles: {
+                                    fontSize: 8,
+                                    textColor: greyColor
+                                },
+                                alternateRowStyles: {
+                                    fillColor: [252, 252, 252]
+                                },
+                                margin: { left: 20, right: 20 },
+                                columnStyles: {
+                                    0: { cellWidth: 25 },
+                                    1: { cellWidth: 30 },
+                                    2: { cellWidth: 20 },
+                                    3: { cellWidth: 20 },
+                                    4: { cellWidth: 20 },
+                                    5: { cellWidth: 25 },
+                                    6: { cellWidth: 15 }
+                                }
+                            });
+                        } else {
+                            // Manual table creation if autoTable is not available
+                            doc.setFillColor(248, 249, 250);
+                            doc.rect(20, yPos - 5, 170, 10, 'F');
+
+                            doc.setTextColor(...primaryColor);
+                            doc.setFontSize(9);
+                            doc.setFont(undefined, 'bold');
+                            doc.text('Transaction ID', 25, yPos);
+                            doc.text('Customer', 70, yPos);
+                            doc.text('Date', 110, yPos);
+                            doc.text('Status', 135, yPos);
+                            doc.text('Amount', 160, yPos);
+
+                            yPos += 10;
+
+                            doc.setFont(undefined, 'normal');
+                            doc.setFontSize(8);
+
+                            for (let i = 0; i < Math.min(tableData.length, 15); i++) {
+                                const row = tableData[i];
+
+                                if (yPos > 270) {
+                                    doc.addPage();
+                                    yPos = 20;
+                                }
+
+                                if (i % 2 === 0) {
+                                    doc.setFillColor(252, 252, 252);
+                                    doc.rect(20, yPos - 3, 170, 8, 'F');
+                                }
+
+                                doc.setTextColor(...greyColor);
+                                doc.text(row[0], 25, yPos);
+                                doc.text(row[1], 70, yPos);
+                                doc.text(row[2], 110, yPos);
+                                doc.text(row[3], 135, yPos);
+                                doc.text(row[5], 160, yPos);
+                                yPos += 8;
+                            }
+                        }
+
+                        // Add footer to all pages
+                        const pageCount = doc.internal.getNumberOfPages();
+                        for (let i = 1; i <= pageCount; i++) {
+                            doc.setPage(i);
+                            doc.setFillColor(...primaryColor);
+                            doc.rect(0, 287, 210, 10, 'F');
+
+                            doc.setTextColor(255, 255, 255);
+                            doc.setFontSize(8);
+                            doc.text(`HirayaFit Sales Report - Page ${i} of ${pageCount}`, 20, 293);
+                            doc.text(`© ${new Date().getFullYear()} HirayaFit. All rights reserved.`, 140, 293);
+                        }
+
+                        // Save the PDF
+                        const fileName = `hirafit-sales-report-${new Date().toISOString().split('T')[0]}.pdf`;
+                        doc.save(fileName);
+
+                        hidePDFLoading();
+                        
+                        // Show success message
+                        alert('PDF report generated successfully!');
+
+                    } catch (pdfError) {
+                        console.error('Error generating PDF:', pdfError);
+                        hidePDFLoading();
+                        alert('Error generating PDF report. Please try again or contact support if the issue persists.');
+                    }
+                }, 500);
+
+            } catch (error) {
+                console.error('Error in exportToPDF:', error);
+                hidePDFLoading();
+                alert('Error generating PDF report. Please try again.');
+            }
         }
 
-        // Export to CSV function - now uses dynamic data
+        // Export to CSV function
         function exportToCSV() {
-            let csvContent = "Transaction ID,Customer Name,Customer Email,Date,Status,Payment Method,Subtotal,Shipping Fee,Total Amount,Items\n";
-            
-            transactionsData.forEach(transaction => {
-                const itemsDesc = transaction.items.map(item => 
-                    `${item.product_name} (${item.color}, ${item.size}) x${item.quantity}`
-                ).join('; ');
-                
-                csvContent += `${transaction.transaction_id},${transaction.customer_name},${transaction.customer_email},${transaction.transaction_date},${transaction.status},${transaction.payment_method},${transaction.subtotal},${transaction.shipping_fee},${transaction.total_amount},"${itemsDesc}"\n`;
-            });
-            
-            // Create and download CSV file
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'hirafit-transactions.csv');
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            try {
+                let csvContent = "Transaction ID,Customer Name,Customer Email,Date,Status,Payment Method,Subtotal,Shipping Fee,Total Amount,Items\n";
+
+                transactionsData.forEach(transaction => {
+                    const itemsDesc = transaction.items.map(item =>
+                        `${item.product_name} (${item.color}, ${item.size}) x${item.quantity}`
+                    ).join('; ');
+
+                    const date = new Date(transaction.transaction_date).toLocaleDateString();
+
+                    csvContent += `"${transaction.transaction_id}","${transaction.customer_name}","${transaction.customer_email}","${date}","${transaction.status}","${transaction.payment_method}","${transaction.subtotal}","${transaction.shipping_fee}","${transaction.total_amount}","${itemsDesc}"\n`;
+                });
+
+                // Create and download CSV file
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `hirafit-transactions-${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                alert('CSV file downloaded successfully!');
+
+            } catch (error) {
+                console.error('Error exporting CSV:', error);
+                alert('Error generating CSV file. Please try again.');
+            }
         }
 
         // View all transactions function
@@ -1581,4 +2258,5 @@
         }
     </script>
 </body>
+
 </html>
