@@ -1371,7 +1371,7 @@ body.modal-open {
                                 <div class="account-links">
                                     <a href="profile.php"><i class="fas fa-user-circle"></i> My Profile</a>
                                     <a href="orders.php"><i class="fas fa-box"></i> My Orders</a>
-                                    <a href="settings.php"><i class="fas fa-cog"></i> Account Settings</a>
+                                  
                                     <div class="sign-out-btn">
                                         <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
                                     </div>
@@ -1439,15 +1439,7 @@ body.modal-open {
         </div>
     </div>
 
-        <button class="slideshow-prev" onclick="changeSlide(-1)"><i class="fas fa-chevron-left"></i></button>
-        <button class="slideshow-next" onclick="changeSlide(1)"><i class="fas fa-chevron-right"></i></button>
 
-        <div class="slideshow-dots">
-            <span class="slideshow-dot active" onclick="currentSlide(0)"></span>
-            <span class="slideshow-dot" onclick="currentSlide(1)"></span>
-            <span class="slideshow-dot" onclick="currentSlide(2)"></span>
-        </div>
-    </div>
 
     <!-- Product Section -->
     <div class="product-section" id="products">
