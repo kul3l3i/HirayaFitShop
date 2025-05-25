@@ -182,10 +182,10 @@ function sendVerificationEmail($email, $otp_code, $fullname)
         $mail->Port = 465;
 
         // Recipients
-        $mail->setFrom('noreply@hirayafit.shopnoreply@hirayafit.shop', 'HirayaFit');
+        $mail->setFrom('noreply@hirayafit.shop', 'HirayaFit'); // Fixed a typo here
         $mail->addAddress($email);
 
-        // Email content
+        // Content
         $mail->isHTML(true);
         $mail->Subject = 'Verify Your HirayaFit Account';
         $mail->Body = "
@@ -195,30 +195,25 @@ function sendVerificationEmail($email, $otp_code, $fullname)
                     <tr>
                         <td style='text-align: center;'>
                             <h2 style='color: #0071c5;'>Welcome to HirayaFit, {$fullname}!</h2>
-                            <p>Thank you for registering with us. To complete your registration, please use the verification code below:</p>
-                            <h1 style='color: #0071c5; font-size: 36px; letter-spacing: 4px;'>{$otp_code}</h1>
-                            <p>This code will expire in <strong>15 minutes</strong>.</p>
-                            <p>You must verify your email to activate your account and enjoy full access to HirayaFit's features.</p>
-                            <p>If you did not register for a HirayaFit account, you can safely ignore this email.</p>
-                            <br>
-                            <p style='font-size: 14px;'>Best regards,<br>HirayaFit Team</p>
-                            <hr style='border: 0; border-top: 1px solid #ddd; margin: 20px 0;'>
-                            <p style='font-size: 12px; color: #888;'>This is an automated message. Please do not reply directly to this email.</p>
+                            <p>Thank you for registering. Use the code below to verify your email:</p>
+                            <h1 style='color: #0071c5;'>{$otp_code}</h1>
+                            <p>This code expires in <strong>15 minutes</strong>.</p>
                         </td>
                     </tr>
                 </table>
             </body>
             </html>
         ";
-        $mail->AltBody = "Hello {$fullname}, Your verification code for HirayaFit registration is: {$otp_code}. This code will expire in 15 minutes.";
+        $mail->AltBody = "Hello {$fullname}, Your verification code is: {$otp_code}. Expires in 15 minutes.";
 
         $mail->send();
         return true;
     } catch (Exception $e) {
-        error_log("Mailer Error: " . $mail->ErrorInfo);
-        return false;
+        // Instead of just logging, return error message
+        return "Mailer Error: " . $mail->ErrorInfo;
     }
 }
+
 ?>
 
 <!DOCTYPE html>
