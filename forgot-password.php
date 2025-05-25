@@ -220,7 +220,7 @@ function sendResetEmail($email, $otp_code, $fullname) {
         $mail->Username = 'noreply@hirayafit.shop';
         $mail->Password = 'Hirayafit@2025';
         $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 587;
+        $mail->Port =465;
         
         // Recipients
         $mail->setFrom('no-reply@hirayafit.com', 'HirayaFit');
