@@ -383,7 +383,7 @@ if (isset($_POST['place_order'])) {
                                         <input type="radio" id="paymaya" name="payment_method" value="paymaya">
                                         <label for="paymaya">
                                             <span class="radio-custom"></span>
-                                            <span class="payment-icon"><img src="Maya_logo.svg.png" alt="PayMaya"></span>
+                                            <span class="payment-icon"><img src="mayalogo.png" alt="PayMaya"></span>
                                             <span class="payment-text">PayMaya</span>
                                         </label>
                                     </div>
