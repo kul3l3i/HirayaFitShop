@@ -137,7 +137,7 @@ $cityCounts = array_count_values(array_column($transactions, 'city'));
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HirayaFit - Admin Dashboard</title>    <link rel="icon" href="images/logo.png">
+    <title>HirayaFit - Admin Dashboard</title>    <link rel="icon" href="images/hf.png">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>

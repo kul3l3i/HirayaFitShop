@@ -227,7 +227,7 @@ function sendVerificationEmail($email, $otp_code, $fullname)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - HirayaFit</title>
-    <link rel="icon" href="images/logo.png">
+    <link rel="icon" href="images/hf.png">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
