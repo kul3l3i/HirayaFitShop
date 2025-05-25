@@ -173,7 +173,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
         $mail->isSMTP();
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
-        $mail->Username = 'leiumarsayco@gmail.com';
+        $mail->Username = 'noreply@hirayafit.shop';
         $mail->Password = 'blqdboqbhlrhqxxc';
         $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
