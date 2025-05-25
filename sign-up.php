@@ -15,7 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
-    $recaptcha_secret = "6LfiUUgrAAAAAAorm2hEoynp_KDiKzQZPAShP0mF";
+    $recaptcha_secret = "6LdMU0grAAAAAEQAjUY6uWg5wwJpFQ43muo4OVUg";
     $recaptcha_response = $_POST['g-recaptcha-response'];
     $recaptcha_url = "https://www.google.com/recaptcha/api/siteverify?secret={$recaptcha_secret}&response={$recaptcha_response}";
     $recaptcha_data = json_decode(file_get_contents($recaptcha_url));
