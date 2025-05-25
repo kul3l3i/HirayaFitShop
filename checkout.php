@@ -375,7 +375,7 @@ if (isset($_POST['place_order'])) {
                                         <input type="radio" id="gcash" name="payment_method" value="gcash">
                                         <label for="gcash">
                                             <span class="radio-custom"></span>
-                                            <span class="payment-icon"><img src="assets/images/gcash-logo.png" alt="GCash"></span>
+                                            <span class="payment-icon"><img src="images/gcash.webp" alt="GCash"></span>
                                             <span class="payment-text">GCash</span>
                                         </label>
                                     </div>
@@ -383,7 +383,7 @@ if (isset($_POST['place_order'])) {
                                         <input type="radio" id="paymaya" name="payment_method" value="paymaya">
                                         <label for="paymaya">
                                             <span class="radio-custom"></span>
-                                            <span class="payment-icon"><img src="assets/images/paymaya-logo.png" alt="PayMaya"></span>
+                                            <span class="payment-icon"><img src="Maya_logo.svg.png" alt="PayMaya"></span>
                                             <span class="payment-text">PayMaya</span>
                                         </label>
                                     </div>
