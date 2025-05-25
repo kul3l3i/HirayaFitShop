@@ -886,7 +886,7 @@ if (isset($_SESSION['user_id']) || isset($_SESSION['admin_id'])) {
                             <h3>My Account</h3>
                             <a href="sign-in.php"><i class="fas fa-sign-in-alt"></i> Sign In</a>
                             <a href="sign-up.php"><i class="fas fa-user-plus"></i> Sign Up</a>
-                            <!--<a href="#orders"><i class="fas fa-box"></i> Track Orders</a>-->
+                            <a href="#orders"><i class="fas fa-box"></i> Track Orders</a>
            
                         </div>
                     </div>

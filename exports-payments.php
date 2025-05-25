@@ -1,16 +1,16 @@
 <?php
 // Start the session at the very beginning
 session_start();
+include 'db_connect.php';
+// Initialize variables
+$error = '';
+$username_email = '';
+
 
 // Include TCPDF library - you'll need to download and include it
 require_once('TCPDF-main/TCPDF-main/tcpdf.php');
 
 
-session_start();
-include 'db_connect.php';
-// Initialize variables
-$error = '';
-$username_email = '';
 
 // Create database connection
 $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);

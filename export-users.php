@@ -1,6 +1,10 @@
 <?php
 // Start the session
 session_start();
+include 'db_connect.php';
+// Initialize variables
+$error = '';
+$username_email = '';
 
 // Check if the user is logged in
 if (!isset($_SESSION['admin_id'])) {
@@ -10,11 +14,7 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 
-session_start();
-include 'db_connect.php';
-// Initialize variables
-$error = '';
-$username_email = '';
+
 
 // Set headers for CSV download
 header('Content-Type: text/csv');

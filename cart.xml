@@ -2,5 +2,16 @@
 <cart>
 
 
-    
-</cart>
+    <item>
+        <id>item_683340ad5056a</id>
+        <user_id>1</user_id>
+        <product_id>2007</product_id>
+        <product_name>Women's Sports Bra</product_name>
+        <image>images/womens_sports_bra.jpg</image>
+        <price>950</price>
+        <color>pink</color>
+        <size>XL</size>
+        <quantity>1</quantity>
+        <timestamp>2025-05-25 18:09:17</timestamp>
+    </item>
+<item><id>item_683341be88706</id><user_id>1</user_id><product_id>2005</product_id><product_name>Men's Zipper Hoodie</product_name><image>images/mens_zipper_hoodie.jpg</image><price>2000</price><color>gray</color><size>XL</size><quantity>3</quantity><timestamp>2025-05-25 18:13:50</timestamp></item></cart>
