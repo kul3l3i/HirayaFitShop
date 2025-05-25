@@ -181,7 +181,7 @@ function sendVerificationEmail($email, $otp_code, $fullname)
         $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port = 465;
 
-        $mail->setFrom('noreply@hirayafit.shopnoreply@hirayafit.shop', 'HirayaFit');
+        $mail->setFrom('noreply@hirayafit.shop', 'HirayaFit');
         $mail->addAddress($email);
 
         // Email content
