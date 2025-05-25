@@ -1273,7 +1273,7 @@ $selectedTotal = $selectedSubtotal + $shippingFee;
     <header class="header">
         <div class="container">
             <div class="navbar">
-                <a href="index.php" class="logo">Hiraya<span>Fit</span></a>
+                <a href="usershop.php" class="logo">Hiraya<span>Fit</span></a>
 
                 <div class="search-bar">
                     <input type="text" id="searchInput" placeholder="Search products...">
