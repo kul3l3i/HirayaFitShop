@@ -1429,7 +1429,7 @@ if ($loggedIn) {
 
         <!-- Main Navigation -->
         <nav class="main-nav" id="mainNav">
-            <a href="#" class="active">HOME</a>
+            <a href="usershop.php" class="active">HOME</a>
         </nav>
     </header>
 

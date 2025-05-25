@@ -1356,7 +1356,6 @@ $selectedTotal = $selectedSubtotal + $shippingFee;
         <!-- Main Navigation -->
         <nav class="main-nav" id="mainNav">
             <a href="usershop.php">HOME</a>
-           
         </nav>
     </header>
 
