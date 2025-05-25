@@ -179,7 +179,7 @@ function sendVerificationEmail($email, $otp_code, $fullname)
         $mail->SMTPAuth = true;
         $mail->Username = 'noreply@hirayafit.shop';
         $mail->Password = 'Hirayafit@2025';
-        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port = 465;
 
         // Recipients
