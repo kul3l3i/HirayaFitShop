@@ -148,7 +148,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit();
             } else {
                 $_SESSION['email_error'] = "Account created but there was an issue sending the verification email. Please contact support.";
-                header("Location: login.php");
+                header("Location:sign-in.php");
                 exit();
             }
         } else {

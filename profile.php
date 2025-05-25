@@ -13,7 +13,7 @@ $username_email = '';
 
 // Check if user is logged in, redirect to login if not
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    header("Location:sign-in.php");
     exit;
 }
 
@@ -35,7 +35,7 @@ if ($result->num_rows > 0) {
 } else {
     // User not found in database, redirect to login
     session_destroy();
-    header("Location: login.php");
+    header("Location:sign-in.php");
     exit;
 }
 

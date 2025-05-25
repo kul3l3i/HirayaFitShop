@@ -17,7 +17,7 @@ $user = null;
 
 // If user is not logged in, redirect to login page
 if (!$loggedIn) {
-    header("Location: login.php");
+    header("Location:sign-in.php");
     exit();
 }
 
