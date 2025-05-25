@@ -15,7 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
-    $recaptcha_secret = "6LcrVEgrAAAAAKBu6XBkPeLkawNeGAQSJD2xWiVG";
+    $recaptcha_secret = "6LcNVUgrAAAAAFHFKBFl0LseTsaTkP2YiGQ3R9fX";
     $recaptcha_response = $_POST['g-recaptcha-response'];
     $recaptcha_url = "https://www.google.com/recaptcha/api/siteverify?secret={$recaptcha_secret}&response={$recaptcha_response}";
     $recaptcha_data = json_decode(file_get_contents($recaptcha_url));
@@ -971,7 +971,7 @@ function sendVerificationEmail($email, $otp_code, $fullname)
                     <input type="checkbox" id="terms" name="terms" required>
                     <label for="terms">I agree to the <a href="#" id="termsModalBtn">Terms of Service</a> and <a href="#" id="privacyModalBtn">Privacy Policy</a></label>
                 </div>
-                <div class="g-recaptcha" data-sitekey="6LcrVEgrAAAAAAiTzXoZ0fHqygOTUfUnGv7FnHYV"></div>
+                <div class="g-recaptcha" data-sitekey="6LcNVUgrAAAAAFQ79qmd51e6_Ab94YcrEb1rOKK8"></div>
                 <button type="submit" class="btn-signup">Create Account</button>
 
                 <div class="login-link">
