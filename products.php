@@ -1,6 +1,6 @@
 <?php
 // Start the session at the very beginning
-session_start();
+
 
 session_start();
 include 'db_connect.php';

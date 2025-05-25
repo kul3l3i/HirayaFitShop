@@ -327,6 +327,46 @@
             display: block;
         }
         
+        /* Dashboard Container */
+        .dashboard-container {
+            padding: 30px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .welcome-text {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 0;
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                width: var(--sidebar-width);
+                transform: translateX(0);
+            }
+            
+            .sidebar-close {
+                display: block;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .toggle-sidebar {
+                display: block;
+            }
+            
+            .navbar-title {
+                display: none;
+            }
+        }
+        
         /* Orders Container */
         .orders-container {
             padding: 30px;

@@ -1084,5 +1084,38 @@ $orders = loadOrdersXml();
             });
         });
     </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Admin dropdown toggle
+        const adminDropdown = document.getElementById('adminDropdown');
+        const adminDropdownContent = document.getElementById('adminDropdownContent');
+        
+        adminDropdown.addEventListener('click', function(e) {
+            e.stopPropagation();
+            adminDropdown.classList.toggle('show');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!adminDropdown.contains(e.target)) {
+                adminDropdown.classList.remove('show');
+            }
+        });
+        
+        // Sidebar toggle for responsive design
+        const toggleSidebar = document.getElementById('toggleSidebar');
+        const sidebarClose = document.getElementById('sidebarClose');
+        const sidebar = document.querySelector('.sidebar');
+        
+        toggleSidebar.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+        });
+        
+        sidebarClose.addEventListener('click', function() {
+            sidebar.classList.remove('active');
+        });
+    });
+    </script>
 </body>
 </html>
