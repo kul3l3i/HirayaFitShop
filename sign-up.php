@@ -971,9 +971,7 @@ function sendVerificationEmail($email, $otp_code, $fullname)
                     <input type="checkbox" id="terms" name="terms" required>
                     <label for="terms">I agree to the <a href="#" id="termsModalBtn">Terms of Service</a> and <a href="#" id="privacyModalBtn">Privacy Policy</a></label>
                 </div>
-
                 <div class="g-recaptcha" data-sitekey="6LcrVEgrAAAAAAiTzXoZ0fHqygOTUfUnGv7FnHYV"></div>
-
                 <button type="submit" class="btn-signup">Create Account</button>
 
                 <div class="login-link">
