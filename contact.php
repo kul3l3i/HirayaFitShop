@@ -960,9 +960,9 @@
    <!-- Simplified Navigation -->
      <!-- Simplified Navigation -->
      <nav class="main-nav" id="mainNav">
-        <a href="index.php" class="active">HOME</a>  
+        <a href="index.php">HOME</a>  
         <a href="about.php">ABOUT</a>
-        <a href="contact.php">CONTACT</a>
+        <a href="contact.php" class="active">CONTACT</a>
     </nav>
     
    <!-- Page Header -->

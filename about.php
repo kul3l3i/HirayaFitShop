@@ -890,8 +890,8 @@
     <!-- Navigation -->
     <!-- Simplified Navigation -->
     <nav class="main-nav" id="mainNav">
-        <a href="index.php" class="active">HOME</a>  
-        <a href="about.php">ABOUT</a>
+        <a href="index.php">HOME</a>  
+        <a href="about.php" class="active">ABOUT</a>
         <a href="contact.php">CONTACT</a>
     </nav>
     
