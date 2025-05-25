@@ -1356,7 +1356,7 @@ if ($loggedIn) {
                 <a href="#">Order Tracker</a>
                 <?php if (!$loggedIn): ?>
                     <a href="sign-in.php">Sign In</a>
-                    <a href="register.php">Register</a>
+                    <a href="sign-up.php">Register</a>
                 <?php else: ?>
                     <a href="#">Welcome, <?php echo $user['username']; ?></a>
                 <?php endif; ?>
