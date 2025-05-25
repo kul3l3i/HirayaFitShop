@@ -987,7 +987,7 @@
             <div class="team-grid">
                 <div class="team-member">
                     <div class="member-image">
-                        <img src="/api/placeholder/400/400" alt="Leiumar Sayco">
+                        <img src="images/leiumarsayco.jpg" alt="Leiumar Sayco">
                     </div>
                     <div class="member-info">
                         <h3 class="member-name">Leiumar Sayco</h3>
