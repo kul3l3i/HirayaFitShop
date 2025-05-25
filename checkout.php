@@ -367,7 +367,7 @@ if (isset($_POST['place_order'])) {
                                         <input type="radio" id="cod" name="payment_method" value="cod" checked>
                                         <label for="cod">
                                             <span class="radio-custom"></span>
-                                            <span class="payment-icon"><i class="fas fa-money-bill-wave"></i></span>
+                                            <span class="payment-icon"><img src="images/cod.png" alt="PayMaya"></span>
                                             <span class="payment-text">Cash on Delivery</span>
                                         </label>
                                     </div>
@@ -383,7 +383,7 @@ if (isset($_POST['place_order'])) {
                                         <input type="radio" id="paymaya" name="payment_method" value="paymaya">
                                         <label for="paymaya">
                                             <span class="radio-custom"></span>
-                                            <span class="payment-icon"><img src="mayalogo.png" alt="PayMaya"></span>
+                                            <span class="payment-icon"><img src="images/mayalogo.png" alt="PayMaya"></span>
                                             <span class="payment-text">PayMaya</span>
                                         </label>
                                     </div>
@@ -391,7 +391,7 @@ if (isset($_POST['place_order'])) {
                                         <input type="radio" id="bank_transfer" name="payment_method" value="bank_transfer">
                                         <label for="bank_transfer">
                                             <span class="radio-custom"></span>
-                                            <span class="payment-icon"><i class="fas fa-university"></i></span>
+                                            <span class="payment-icon"><img src="images/bank.png" alt="PayMaya"</i></span>
                                             <span class="payment-text">Bank Transfer</span>
                                         </label>
                                     </div>
