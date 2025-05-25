@@ -2621,7 +2621,7 @@ footer {
     
     <!-- Simplified Navigation -->
     <nav class="main-nav" id="mainNav">
-        <a href="in.php" class="active">HOME</a>  
+        <a href="index.php" class="active">HOME</a>  
         <a href="about.php">ABOUT</a>
         <a href="contact.php">CONTACT</a>
     </nav>

@@ -855,6 +855,225 @@ function sendVerificationEmail($email, $otp_code, $fullname)
                 padding: 20px;
             }
         }
+
+        footer {
+    background-color: var(--primary);
+    color: white;
+    padding: 60px 0 20px;
+}
+
+.footer-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 30px;
+}
+
+.footer-column h3 {
+    font-size: 18px;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.footer-column h3:after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -8px;
+    width: 40px;
+    height: 2px;
+    background-color: var(--secondary);
+}
+
+.footer-column p {
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    opacity: 0.8;
+}
+
+.footer-links {
+    list-style: none;
+}
+
+.footer-links li {
+    margin-bottom: 10px;
+}
+
+.footer-links a {
+    color: #ccc;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: var(--secondary);
+}
+
+.footer-social {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.footer-social a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background-color: rgba(255,255,255,0.1);
+    color: white;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+}
+
+.footer-social a:hover {
+    background-color: var(--secondary);
+}
+
+.footer-contact {
+    margin-top: 20px;
+}
+
+.contact-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.contact-icon {
+    margin-right: 10px;
+    color: var(--secondary);
+}
+
+.contact-text {
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.copyright {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    text-align: center;
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+/* Mobile menu button */
+.menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 22px;
+    cursor: pointer;
+}
+
+/* Media queries for responsive design */
+@media (max-width: 992px) {
+    
+    
+    .footer-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+
+}
+
+@media (max-width: 768px) {
+    .top-bar .container {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .search-bar {
+        max-width: none;
+        margin: 10px 0;
+    }
+    
+    .navbar {
+        flex-wrap: wrap;
+    }
+    
+    .menu-toggle {
+        display: block;
+        order: 1;
+    }
+    
+    .logo {
+        order: 2;
+        margin: 0 auto;
+    }
+    
+    .nav-icons {
+        order: 3;
+    }
+    
+    .main-nav {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .main-nav.active {
+        display: flex;
+    }
+    
+
+}
+
+@media (max-width: 576px) {
+    .team-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .footer-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .btn-outline {
+        margin-left: 0;
+        margin-top: 15px;
+        display: block;
+        max-width: 200px;
+        margin: 15px auto 0;
+    }
+}
+
+
+        /* Scroll to top button styles */
+        #scrollUpBtn {
+            display: none; /* Nakatago sa umpisa */
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 99;
+            font-size: 18px;
+            border: none;
+            outline: none;
+            background-color: var(--secondary);
+            color: var(--light);
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        
+        #scrollUpBtn:hover {
+            background-color: var(--primary);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            #scrollUpBtn {
+                bottom: 20px;
+                right: 20px;
+                font-size: 16px;
+                padding: 12px;
+            }
+        }
     </style>
 </head>
 
@@ -884,7 +1103,7 @@ function sendVerificationEmail($email, $otp_code, $fullname)
                             <h3>My Account</h3>
                             <a href="sign-in.php"><i class="fas fa-sign-in-alt"></i> Sign In</a>
                             <a href="sign-up.php"><i class="fas fa-user-plus"></i> Sign Up</a>
-                            <a href="#orders"><i class="fas fa-box"></i> Track Orders</a>
+                            <!--<a href="#orders"><i class="fas fa-box"></i> Track Orders</a>-->
 
                         </div>
                     </div>
@@ -1077,7 +1296,74 @@ function sendVerificationEmail($email, $otp_code, $fullname)
     </div>
 
     <!-- Footer would go here -->
-
+    <!-- Footer -->
+    <footer>
+    <div class="container">
+        <div class="footer-container">
+            <div class="footer-column">
+                <h3>About HirayaFit</h3>
+                <p>We create premium activewear designed to inspire confidence and support your fitness goals while promoting sustainability.</p>
+                <div class="footer-social">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-pinterest"></i></a>
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Quick Links</h3>
+                <ul class="footer-links">
+        
+                    <li><a href="#">Men's Activewear</a></li>
+                    <li><a href="#">Women's Activewear</a></li>
+                    <li><a href="#">Footwear</a></li>
+                    <li><a href="#">Accessories</a></li>
+                    <li><a href="#">Sale Items</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Customer Service</h3>
+                <ul class="footer-links">
+                    <li><a href="contact.php">Contact Us</a></li>
+                    <li><a href="faqs.php">FAQs</a></li>
+                    <li><a href="shipping.php">Shipping & Returns</a></li>
+                    <li><a href="size-guide.php">Size Guide</a></li>
+                    <li><a href="privacy.php">Privacy Policy</a></li>
+                    <li><a href="terms.php">Terms & Conditions</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Contact Info</h3>
+                <div class="footer-contact">
+                    <div class="contact-item">
+                        <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="contact-text">123 Fitness Street, Active City, AC 12345</div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon"><i class="fas fa-phone-alt"></i></div>
+                        <div class="contact-text">+1 (555) 123-4567</div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+                        <div class="contact-text">support@hirayafit.com</div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon"><i class="fas fa-clock"></i></div>
+                        <div class="contact-text">Mon-Fri: 9am - 6pm EST</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="copyright">
+            &copy; 2025 HirayaFit. All Rights Reserved.
+        </div>
+    </div>
+</footer>
     <script>
         // Account dropdown toggle
         document.getElementById('accountBtn').addEventListener('click', function(e) {
