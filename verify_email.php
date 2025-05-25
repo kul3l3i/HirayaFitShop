@@ -35,47 +35,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             break;
         }
     }
-    
+
     if (count($otp_digits) == 6) {
         $entered_otp = implode("", $otp_digits);
-        
+
         // Validate OTP in database
         $stmt = $conn->prepare("SELECT id, otp_expires_at FROM users WHERE email = ? AND otp_code = ? AND otp_purpose = ? AND otp_is_used = 0");
         $stmt->bind_param("sss", $email, $entered_otp, $otp_purpose);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         if ($result->num_rows > 0) {
             $user = $result->fetch_assoc();
-            
+
             // Check if OTP has expired
             $current_time = date('Y-m-d H:i:s');
             $otp_expires_at = $user['otp_expires_at'];
-            
+
             if ($current_time > $otp_expires_at) {
                 $verification_message = "The verification code has expired. Please request a new one.";
             } else {
                 // Update user as verified and mark OTP as used
                 $update_stmt = $conn->prepare("UPDATE users SET is_active = 1, otp_is_used = 1 WHERE id = ?");
                 $update_stmt->bind_param("i", $user['id']);
-                
+
                 if ($update_stmt->execute()) {
                     $is_verified = true;
                     $verification_message = "Email verified successfully! You can now login to your account.";
-                    
+
                     // Clear verification session variables
                     unset($_SESSION['registration_email']);
                     unset($_SESSION['otp_purpose']);
                 } else {
                     $verification_message = "Error updating verification status. Please try again.";
                 }
-                
+
                 $update_stmt->close();
             }
         } else {
             $verification_message = "Invalid verification code. Please try again.";
         }
-        
+
         $stmt->close();
     }
 }
@@ -86,12 +86,12 @@ if (isset($_POST['resend_otp'])) {
     $new_otp = sprintf("%06d", rand(0, 999999));
     $current_time = date('Y-m-d H:i:s');
     $otp_expires_at = date('Y-m-d H:i:s', strtotime('+15 minutes'));
-    
+
     // Update OTP in database
     $update_stmt = $conn->prepare("UPDATE users SET otp_code = ?, otp_created_at = ?, otp_expires_at = ?, otp_is_used = 0 WHERE email = ? AND otp_purpose = ?");
     $otp_is_used = 0;
     $update_stmt->bind_param("sssss", $new_otp, $current_time, $otp_expires_at, $email, $otp_purpose);
-    
+
     if ($update_stmt->execute()) {
         // Get user's name for the email
         $name_stmt = $conn->prepare("SELECT fullname FROM users WHERE email = ?");
@@ -101,7 +101,7 @@ if (isset($_POST['resend_otp'])) {
         $user_data = $name_result->fetch_assoc();
         $fullname = $user_data['fullname'];
         $name_stmt->close();
-        
+
         // Send new OTP
         if (sendVerificationEmail($email, $new_otp, $fullname)) {
             $verification_message = "A new verification code has been sent to your email.";
@@ -111,20 +111,21 @@ if (isset($_POST['resend_otp'])) {
     } else {
         $verification_message = "Error generating new verification code. Please try again.";
     }
-    
+
     $update_stmt->close();
 }
 
 mysqli_close($conn);
 
 // Function to send verification email
-function sendVerificationEmail($email, $otp_code, $fullname) {
+function sendVerificationEmail($email, $otp_code, $fullname)
+{
     require 'C:\xampp\htdocs\PHPMailer\PHPMailer\src\Exception.php';
     require 'C:\xampp\htdocs\PHPMailer\PHPMailer\src\PHPMailer.php';
     require 'C:\xampp\htdocs\PHPMailer\PHPMailer\src\SMTP.php';
 
     $mail = new PHPMailer\PHPMailer\PHPMailer(true);
-    
+
     try {
         // Server settings
         $mail->isSMTP();
@@ -134,11 +135,11 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
         $mail->Password = 'Hirayafit@2025';
         $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
-        
+
         // Recipients
         $mail->setFrom('no-reply@hirayafit.com', 'HirayaFit');
         $mail->addAddress($email);
-        
+
         // Email content
         $mail->isHTML(true);
         $mail->Subject = 'Verify Your HirayaFit Account';
@@ -165,7 +166,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             </html>
         ";
         $mail->AltBody = "Hello {$fullname}, Your verification code for HirayaFit registration is: {$otp_code}. This code will expire in 15 minutes.";
-        
+
         $mail->send();
         return true;
     } catch (Exception $e) {
@@ -177,10 +178,12 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Verification - HirayaFit</title>\n    <link rel="icon" href="images/logo.png">
+    <title>Email Verification - HirayaFit</title>
+    <link rel="icon" href="images/logo.png">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -191,18 +194,18 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             --dark: #111111;
             --grey: #767676;
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
+
         body {
             background-color: var(--light);
         }
-        
+
         /* Top Bar and Header Styles (same as sign-up page) */
         .top-bar {
             background-color: var(--primary);
@@ -212,7 +215,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             font-size: 12px;
             letter-spacing: 0.5px;
         }
-        
+
         .top-bar .container {
             display: flex;
             justify-content: space-between;
@@ -221,34 +224,34 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             margin: 0 auto;
             padding: 0 15px;
         }
-        
+
         .top-bar a {
             color: white;
             text-decoration: none;
             margin-left: 15px;
         }
-        
+
         .header {
             background-color: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
             position: sticky;
             top: 0;
             z-index: 100;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 15px;
         }
-        
+
         .navbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 15px 0;
         }
-        
+
         .logo {
             font-size: 24px;
             font-weight: 700;
@@ -256,16 +259,16 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             text-decoration: none;
             letter-spacing: -0.5px;
         }
-        
+
         .logo span {
             color: var(--secondary);
         }
-        
+
         .nav-icons {
             display: flex;
             align-items: center;
         }
-        
+
         .nav-icons a {
             margin-left: 20px;
             font-size: 18px;
@@ -273,7 +276,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             text-decoration: none;
             position: relative;
         }
-        
+
         .cart-count {
             position: absolute;
             top: -6px;
@@ -288,25 +291,25 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             justify-content: center;
             align-items: center;
         }
-        
+
         /* Account dropdown styling */
         .account-dropdown {
             position: relative;
             display: inline-block;
         }
-        
+
         .account-dropdown-content {
             display: none;
             position: absolute;
             right: 0;
             background-color: white;
             min-width: 200px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             z-index: 1;
             border-radius: 4px;
             margin-top: 10px;
         }
-        
+
         .account-dropdown-content:before {
             content: '';
             position: absolute;
@@ -318,7 +321,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             border-right: 8px solid transparent;
             border-bottom: 8px solid white;
         }
-        
+
         .account-dropdown-content a {
             color: var(--dark);
             padding: 12px 20px;
@@ -329,16 +332,16 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             margin: 0;
             border-bottom: 1px solid #f5f5f5;
         }
-        
+
         .account-dropdown-content a:last-child {
             border-bottom: none;
         }
-        
+
         .account-dropdown-content a:hover {
             background-color: #f8f9fa;
             color: var(--secondary);
         }
-        
+
         .account-dropdown-content h3 {
             padding: 12px 20px;
             margin: 0;
@@ -349,11 +352,11 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             border-radius: 4px 4px 0 0;
             font-weight: 500;
         }
-        
+
         .account-dropdown.active .account-dropdown-content {
             display: block;
         }
-        
+
         /* Navigation Styles */
         .main-nav {
             display: flex;
@@ -361,7 +364,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             background-color: var(--light);
             border-bottom: 1px solid #f0f0f0;
         }
-        
+
         .main-nav a {
             padding: 15px 20px;
             text-decoration: none;
@@ -371,11 +374,12 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             transition: all 0.2s ease;
             position: relative;
         }
-        
-        .main-nav a:hover, .main-nav a.active {
+
+        .main-nav a:hover,
+        .main-nav a.active {
             color: var(--secondary);
         }
-        
+
         .main-nav a:after {
             content: '';
             position: absolute;
@@ -387,11 +391,12 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             transition: all 0.2s ease;
             transform: translateX(-50%);
         }
-        
-        .main-nav a:hover:after, .main-nav a.active:after {
+
+        .main-nav a:hover:after,
+        .main-nav a.active:after {
             width: 60%;
         }
-        
+
         .menu-toggle {
             display: none;
             background: none;
@@ -400,7 +405,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             font-size: 22px;
             cursor: pointer;
         }
-        
+
         /* Email Verification Specific Styles */
         .page-title {
             text-align: center;
@@ -409,47 +414,47 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             font-weight: 600;
             color: var(--primary);
         }
-        
+
         .verification-container {
             max-width: 500px;
             margin: 0 auto 60px;
             padding: 30px;
             background-color: white;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
             text-align: center;
         }
-        
+
         .verification-icon {
             font-size: 60px;
             color: var(--secondary);
             margin-bottom: 20px;
         }
-        
+
         .verification-message {
             font-size: 16px;
             color: var(--dark);
             margin-bottom: 30px;
             line-height: 1.6;
         }
-        
+
         .email-display {
             display: inline-block;
             font-weight: 500;
             color: var(--secondary);
         }
-        
+
         .otp-form {
             margin: 25px 0;
         }
-        
+
         .otp-inputs {
             display: flex;
             justify-content: center;
             gap: 10px;
             margin: 25px 0;
         }
-        
+
         .otp-input {
             width: 50px;
             height: 55px;
@@ -460,13 +465,13 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             background-color: #f9f9f9;
             transition: all 0.3s ease;
         }
-        
+
         .otp-input:focus {
             outline: none;
             border-color: var(--secondary);
-            box-shadow: 0 0 0 2px rgba(0,113,197,0.2);
+            box-shadow: 0 0 0 2px rgba(0, 113, 197, 0.2);
         }
-        
+
         .verify-btn {
             display: block;
             width: 100%;
@@ -481,11 +486,11 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             transition: background-color 0.3s ease;
             margin-bottom: 20px;
         }
-        
+
         .verify-btn:hover {
             background-color: #005fa8;
         }
-        
+
         .resend-section {
             margin-top: 25px;
             display: flex;
@@ -494,12 +499,12 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             flex-wrap: wrap;
             gap: 10px;
         }
-        
+
         .resend-text {
             font-size: 14px;
             color: var(--grey);
         }
-        
+
         .resend-btn {
             background: none;
             border: none;
@@ -510,11 +515,11 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             font-size: 14px;
             text-decoration: underline;
         }
-        
+
         .resend-btn:hover {
             color: #005fa8;
         }
-        
+
         .success-message {
             color: #28a745;
             font-weight: 500;
@@ -523,7 +528,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             background-color: rgba(40, 167, 69, 0.1);
             border-radius: 5px;
         }
-        
+
         .error-message {
             color: #dc3545;
             font-weight: 500;
@@ -532,7 +537,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             background-color: rgba(220, 53, 69, 0.1);
             border-radius: 5px;
         }
-        
+
         .login-link {
             display: inline-block;
             margin-top: 15px;
@@ -544,55 +549,55 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             font-weight: 500;
             transition: all 0.3s ease;
         }
-        
+
         .login-link:hover {
             background-color: #333;
         }
-        
+
         /* Media queries */
         @media (max-width: 768px) {
             .top-bar .container {
                 flex-direction: column;
                 gap: 5px;
             }
-            
+
             .navbar {
                 flex-wrap: wrap;
             }
-            
+
             .menu-toggle {
                 display: block;
                 order: 1;
             }
-            
+
             .logo {
                 order: 2;
                 margin: 0 auto;
             }
-            
+
             .nav-icons {
                 order: 3;
             }
-            
+
             .main-nav {
                 display: none;
                 flex-direction: column;
                 align-items: center;
             }
-            
+
             .main-nav.active {
                 display: flex;
             }
-            
+
             .verification-container {
                 padding: 20px;
                 margin: 0 15px 40px;
             }
-            
+
             .otp-inputs {
                 gap: 5px;
             }
-            
+
             .otp-input {
                 width: 40px;
                 height: 45px;
@@ -601,6 +606,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
         }
     </style>
 </head>
+
 <body>
     <!-- Top Bar -->
     <div class="top-bar">
@@ -613,13 +619,13 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             </div>
         </div>
     </div>
-    
+
     <!-- Header -->
     <header class="header">
         <div class="container">
             <div class="navbar">
                 <a href="index.php" class="logo">Hiraya<span>Fit</span></a>
-                
+
                 <div class="nav-icons">
                     <div class="account-dropdown" id="accountDropdown">
                         <a href="#" id="accountBtn"><i class="fas fa-user"></i></a>
@@ -631,20 +637,20 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
                             <a href="#wishlist"><i class="fas fa-heart"></i> My Wishlist</a>
                         </div>
                     </div>
-                   <!-- <a href="#"><i class="fas fa-heart"></i></a>-->
+                    <!-- <a href="#"><i class="fas fa-heart"></i></a>-->
                     <a href="#" id="cartBtn">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" id="cartCount">0</span>
                     </a>
                 </div>
-                
+
                 <button class="menu-toggle" id="mobileMenuToggle">
                     <i class="fas fa-bars"></i>
                 </button>
             </div>
         </div>
     </header>
-    
+
     <!-- Navigation -->
     <nav class="main-nav" id="mainNav">
         <a href="index.php">HOME</a>
@@ -656,11 +662,11 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
         <a href="#about">ABOUT</a>
         <a href="#contact">CONTACT</a>
     </nav>
-    
+
     <!-- Email Verification Section -->
     <section>
         <h1 class="page-title">Email Verification</h1>
-        
+
         <div class="verification-container">
             <?php if ($is_verified): ?>
                 <!-- Success State -->
@@ -679,28 +685,28 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
                     <i class="fas fa-envelope"></i>
                 </div>
                 <p class="verification-message">
-                    We've sent a verification code to <span class="email-display"><?php echo htmlspecialchars($email); ?></span>. 
+                    We've sent a verification code to <span class="email-display"><?php echo htmlspecialchars($email); ?></span>.
                     Please enter the 6-digit code below to verify your email address.
                 </p>
-                
+
                 <?php if (!empty($verification_message)): ?>
                     <div class="<?php echo $is_verified ? 'success-message' : 'error-message'; ?>">
                         <?php echo $verification_message; ?>
                     </div>
                 <?php endif; ?>
-                
+
                 <form class="otp-form" method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
                     <div class="otp-inputs">
                         <?php for ($i = 1; $i <= 6; $i++): ?>
-                            <input type="text" class="otp-input" name="otp_digit_<?php echo $i; ?>" maxlength="1" required 
-                                   pattern="[0-9]" inputmode="numeric" autocomplete="off" 
-                                   data-index="<?php echo $i; ?>">
+                            <input type="text" class="otp-input" name="otp_digit_<?php echo $i; ?>" maxlength="1" required
+                                pattern="[0-9]" inputmode="numeric" autocomplete="off"
+                                data-index="<?php echo $i; ?>">
                         <?php endfor; ?>
                     </div>
-                    
+
                     <button type="submit" class="verify-btn">Verify Email</button>
                 </form>
-                
+
                 <div class="resend-section">
                     <span class="resend-text">Didn't receive the code?</span>
                     <form method="POST" style="display:inline;">
@@ -710,36 +716,36 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
             <?php endif; ?>
         </div>
     </section>
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Account dropdown functionality
             const accountBtn = document.getElementById('accountBtn');
             const accountDropdown = document.getElementById('accountDropdown');
-            
+
             accountBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 accountDropdown.classList.toggle('active');
             });
-            
+
             // Close dropdown when clicking outside
             document.addEventListener('click', function(e) {
                 if (!accountDropdown.contains(e.target) && !accountBtn.contains(e.target)) {
                     accountDropdown.classList.remove('active');
                 }
             });
-            
+
             // Mobile menu toggle
             const mobileMenuToggle = document.getElementById('mobileMenuToggle');
             const mainNav = document.getElementById('mainNav');
-            
+
             mobileMenuToggle.addEventListener('click', function() {
                 mainNav.classList.toggle('active');
             });
-            
+
             // OTP input handling
             const otpInputs = document.querySelectorAll('.otp-input');
-            
+
             otpInputs.forEach(function(input) {
                 // Auto-focus next input field
                 input.addEventListener('input', function() {
@@ -750,7 +756,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
                         }
                     }
                 });
-                
+
                 // Allow backspace to focus previous input
                 input.addEventListener('keydown', function(e) {
                     if (e.key === 'Backspace' && this.value.length === 0) {
@@ -774,7 +780,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
                 input.addEventListener('paste', function(e) {
                     e.preventDefault();
                     const paste = e.clipboardData.getData('text');
-                    
+
                     // If it's a 6-digit number
                     if (/^\d{6}$/.test(paste)) {
                         // Distribute across inputs
@@ -784,7 +790,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
                     }
                 });
             });
-            
+
             // Auto-focus first input on page load
             if (otpInputs.length > 0) {
                 otpInputs[0].focus();
@@ -793,6 +799,7 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
     </script>
 
     <script src="js/cart.js"></script>
-    
+
 </body>
+
 </html>

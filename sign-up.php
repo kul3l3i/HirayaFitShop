@@ -147,7 +147,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("Location: verify_email.php");
                 exit();
             } else {
-                // If email fails, still create account but inform user
                 $_SESSION['email_error'] = "Account created but there was an issue sending the verification email. Please contact support.";
                 header("Location: login.php");
                 exit();
