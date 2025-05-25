@@ -2,11 +2,11 @@
 // Start the session at the very beginning
 session_start();
 
-// Database connection configuration
-$db_host = 'localhost';
-$db_user = 'root'; // Change to your DB username
-$db_pass = '';     // Change to your DB password
-$db_name = 'hirayafitdb'; // Change to your DB name
+session_start();
+include 'db_connect.php';
+// Initialize variables
+$error = '';
+$username_email = '';
 
 // Create database connection
 $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
