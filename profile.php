@@ -817,7 +817,7 @@ $conn->close();
                         </div>
                     </div>
                     
-                    <!--<a href="wishlist.php"><i class="fas fa-heart"></i></a>-->
+                    <a href="messagesUser.php"><i class="fas fa-envelope"></i></a>
                     <a href="cart.php" id="cartBtn">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" id="cartCount">

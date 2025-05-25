@@ -279,6 +279,7 @@ function getProgressValue($status) {
                         <!-- Login link for non-logged-in users -->
                         <a href="sign-in.php"><i class="fas fa-user-circle"></i></a>
                     <?php endif; ?>
+                    <a href="messagesUser.php"><i class="fas fa-envelope"></i></a>
 
                     <a href="cart.php" id="cartBtn">
                         <i class="fas fa-shopping-cart"></i>

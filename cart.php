@@ -1319,7 +1319,7 @@ $selectedTotal = $selectedSubtotal + $shippingFee;
                         <a href="sign-in.php"><i class="fas fa-user-circle"></i></a>
                     <?php endif; ?>
 
-                   
+                    <a href="messagesUser.php"><i class="fas fa-envelope"></i></a>
                     <a href="cart.php" id="cartBtn" class="active">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="cart-count" id="cartCount">
@@ -1561,6 +1561,31 @@ $selectedTotal = $selectedSubtotal + $shippingFee;
 
 
     <script>
+
+        // Toggle mobile menu
+        document.getElementById('mobileMenuToggle').addEventListener('click', function() {
+            document.getElementById('mainNav').classList.toggle('active');
+        });
+
+        // Toggle account dropdown
+        const accountBtn = document.getElementById('accountBtn');
+        const accountDropdownContent = document.getElementById('accountDropdownContent');
+
+        if (accountBtn) {
+            accountBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                accountDropdownContent.classList.toggle('show');
+            });
+
+            // Close dropdown when clicking outside
+            window.addEventListener('click', function(e) {
+                if (!e.target.matches('#accountBtn') && !e.target.closest('#accountDropdownContent')) {
+                    if (accountDropdownContent.classList.contains('show')) {
+                        accountDropdownContent.classList.remove('show');
+                    }
+                }
+            });
+        }
         document.querySelectorAll('.cart-item .update-button').forEach(button => {
             button.addEventListener('click', () => updateCartItem(button));
         });
