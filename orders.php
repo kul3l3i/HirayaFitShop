@@ -220,8 +220,8 @@ function getProgressValue($status) {
                 <a href="#">Help</a>
                 <a href="#">Order Tracker</a>
                 <?php if (!$loggedIn): ?>
-                    <a href="login.php">Sign In</a>
-                    <a href="register.php">Register</a>
+                    <a href="sign-in.php">Sign In</a>
+                    <a href="sign-up.php">Register</a>
                 <?php else: ?>
                     <a href="#">Welcome, <?php echo $user['username']; ?></a>
                 <?php endif; ?>
@@ -267,7 +267,8 @@ function getProgressValue($status) {
                                     <a href="profile.php"><i class="fas fa-user-circle"></i> My Profile</a>
                                     <a href="orders.php" class="active"><i class="fas fa-box"></i> My Orders</a>
         
-                                    <a href="settings.php"><i class="fas fa-cog"></i> Account Settings</a>
+                                   
+                                
                                     <div class="sign-out-btn">
                                         <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
                                     </div>
@@ -276,7 +277,7 @@ function getProgressValue($status) {
                         </div>
                     <?php else: ?>
                         <!-- Login link for non-logged-in users -->
-                        <a href="login.php"><i class="fas fa-user-circle"></i></a>
+                        <a href="sign-in.php"><i class="fas fa-user-circle"></i></a>
                     <?php endif; ?>
 
                     <a href="cart.php" id="cartBtn">

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HirayaFit - Premium Activewear</title>    <link rel="icon" href="images/logo.png">
+    <title>HirayaFit - Premium Activewear</title> <link rel="icon" href="images/logo.png">
     <link rel="icon" href="images/logo.png">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
@@ -2537,6 +2537,37 @@ footer {
 }
 
 
+        /* Scroll to top button styles */
+        #scrollUpBtn {
+            display: none; /* Nakatago sa umpisa */
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 99;
+            font-size: 18px;
+            border: none;
+            outline: none;
+            background-color: var(--secondary);
+            color: var(--light);
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        
+        #scrollUpBtn:hover {
+            background-color: var(--primary);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            #scrollUpBtn {
+                bottom: 20px;
+                right: 20px;
+                font-size: 16px;
+                padding: 12px;
+            }
+        }
 
     </style>
 </head>

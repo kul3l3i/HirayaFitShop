@@ -410,7 +410,7 @@ if ($viewingOrder && $currentOrder) {
                         </div>
                     <?php else: ?>
                         <!-- Login link for non-logged-in users -->
-                        <a href="login.php"><i class="fas fa-user-circle"></i></a>
+                        <a href="sign-in.php"><i class="fas fa-user-circle"></i></a>
                     <?php endif; ?>
 
                     <a href="cart.php" id="cartBtn">

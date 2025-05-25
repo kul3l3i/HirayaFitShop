@@ -5,11 +5,12 @@ session_start();
 // Include TCPDF library - you'll need to download and include it
 require_once('TCPDF-main/TCPDF-main/tcpdf.php');
 
-// Database connection configuration
-$db_host = 'localhost';
-$db_user = 'root';
-$db_pass = '';
-$db_name = 'hirayafitdb';
+
+session_start();
+include 'db_connect.php';
+// Initialize variables
+$error = '';
+$username_email = '';
 
 // Create database connection
 $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);

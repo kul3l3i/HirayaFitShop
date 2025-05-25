@@ -41,6 +41,7 @@ if ($loggedIn) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HirayaFit - Premium Activewear</title>
+    <link rel="icon" href="images/logo.png">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -1399,7 +1400,7 @@ if ($loggedIn) {
                                 <div class="account-links">
                                     <a href="profile.php"><i class="fas fa-user-circle"></i> My Profile</a>
                                     <a href="orders.php"><i class="fas fa-box"></i> My Orders</a>
-                                    <a href="settings.php"><i class="fas fa-cog"></i> Account Settings</a>
+                                  
                                     <div class="sign-out-btn">
                                         <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
                                     </div>
@@ -1408,7 +1409,7 @@ if ($loggedIn) {
                         </div>
                     <?php else: ?>
                         <!-- Login link for non-logged-in users -->
-                        <a href="login.php"><i class="fas fa-user-circle"></i></a>
+                        <a href="sign-in.php"><i class="fas fa-user-circle"></i></a>
                     <?php endif; ?>
 
                     <!-- Updated Cart Button -->

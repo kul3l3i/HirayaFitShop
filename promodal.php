@@ -1,10 +1,5 @@
 <?php
 // Start the session at the very beginning
-session_start();
-include 'db_connect.php';
-// Initialize variables
-$error = '';
-$username_email = '';
 
 session_start();
 include 'db_connect.php';

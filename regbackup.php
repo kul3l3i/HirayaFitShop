@@ -763,8 +763,8 @@ function sendVerificationEmail($email, $otp_code, $fullname) {
                         <a href="#" id="accountBtn"><i class="fas fa-user"></i></a>
                         <div class="account-dropdown-content" id="accountDropdownContent">
                             <h3>My Account</h3>
-                            <a href="login.php"><i class="fas fa-sign-in-alt"></i> Sign In</a>
-                            <a href="register.php"><i class="fas fa-user-plus"></i> Sign Up</a>
+                            <a href="sign-in.php"><i class="fas fa-sign-in-alt"></i> Sign In</a>
+                            <a href="sign-up.php"><i class="fas fa-user-plus"></i> Sign Up</a>
                             <a href="#orders"><i class="fas fa-box"></i> Track Orders</a>
                             <a href="#wishlist"><i class="fas fa-heart"></i> My Wishlist</a>
                         </div>
