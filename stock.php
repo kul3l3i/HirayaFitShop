@@ -516,7 +516,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'history_pdf') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HirayaFit - Stock Management</title>
+    <title>HirayaFit - Stock Management</title>    <link rel="icon" href="images/logo.png">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
        :root {

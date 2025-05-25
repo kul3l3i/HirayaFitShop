@@ -232,7 +232,7 @@ $activeTab = isset($_GET['tab']) ? $_GET['tab'] : 'products';
 <!DOCTYPE html>
 <html>
 <head>
-    <title>HirayaFit Store Admin</title>
+    <title>HirayaFit Store Admin</title>    <link rel="icon" href="images/logo.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>

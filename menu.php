@@ -73,7 +73,7 @@ if (isset($_SESSION['carts'][$user_id])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Menu - La Croissanterie</title>
+    <title>Product Menu - La Croissanterie</title>    <link rel="icon" href="images/logo.png">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
