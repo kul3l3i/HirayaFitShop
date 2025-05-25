@@ -2,6 +2,11 @@
 // Start session
 session_start();
 
+include 'db_connect.php';
+// Initialize variables
+$error = '';
+$username_email = '';
+
 // Check if user is logged in as admin
 if (!isset($_SESSION['admin_id'])) {
     // Redirect to login page
@@ -9,17 +14,6 @@ if (!isset($_SESSION['admin_id'])) {
     exit;
 }
 
-// Database connection configuration
-$db_host = 'localhost';
-$db_user = 'u801377270_hiraya_2025'; // Change to your DB username
-$db_pass = 'Hiraya_2025';     // Change to your DB password
-$db_name = 'u801377270_hiraya_2025'; // Change to your DB name
-
-session_start();
-include 'db_connect.php';
-// Initialize variables
-$error = '';
-$username_email = '';
 
 // Define variables
 $importSuccess = false;

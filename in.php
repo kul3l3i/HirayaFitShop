@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HirayaFit - Premium Activewear</title>
+    <link rel="icon" href="images/logo.png">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -80,8 +81,8 @@ body {
 }
 
 .logo span {
-    color: var(--secondary);
-}
+            color: var(--secondary);
+        }
 
 .search-bar {
     flex-grow: 1;
@@ -248,98 +249,248 @@ body {
     width: 60%;
 }
 
- /* Hero Section with Video */
- .hero {
-    position: relative;
-    height: 500px; /* Matching your original size */
-    width: 100%;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    color: white;
-}
+  /* Hero Section */
+  .hero {
+            position: relative;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-.hero-video {
-    position: absolute;
-    width: 100%;
-    height: 500px;
-    object-fit: cover;
-    z-index: 1;
-}
+        .hero-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            transform: translate(-50%, -50%);
+            object-fit: cover;
+            z-index: 1;
+        }
 
-.hero-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 2;
-}
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 124, 199, 0.2) 50%, rgba(0, 0, 0, 0.8) 100%);
+            z-index: 2;
+        }
 
-.hero-content {
-    position: relative;
-    width: 100%;
-    text-align: center;
-    z-index: 3;
-    padding: 0 20px;
-}
+        .hero-content {
+            position: relative;
+            text-align: center;
+            z-index: 3;
+            padding: 0 20px;
+            max-width: 800px;
+            animation: fadeInUp 1.5s ease-out;
+        }
 
-.hero h1 {
-    font-size: 2.8rem; /* Your original size */
-    margin-bottom: 20px;
+        .brand-logo {
+            font-size: 25px;
     font-weight: 700;
+    color: var(--light);
+    text-decoration: none;
     letter-spacing: -0.5px;
-}
+        }
+        
+        .brand-logo span {
+            color: var(--secondary);
+        }
 
-.hero p {
-    font-size: 1.1rem; /* Your original size */
-    margin-bottom: 30px;
-    line-height: 1.6;
-    opacity: 0.9;
-}
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            color: white;
+            margin-bottom: 30px;
+            font-weight: 900;
+            letter-spacing: -2px;
+            line-height: 0.9;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
 
-.btn {
-    display: inline-block;
-    padding: 12px 28px;
-    background-color: var(--secondary);
-    color: white;
-    text-decoration: none;
-    border-radius: 30px;
-    transition: all 0.3s ease;
-    font-weight: 600;
-    font-size: 14px;
-    letter-spacing: 0.5px;
-    margin-right: 10px;
-}
+        .hero-subtitle {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 40px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            line-height: 1.4;
+            animation: fadeIn 2s ease-out 1s both;
+        }
 
-.btn:hover {
-    background-color: #005fa8;
-}
+        .scroll-indicator {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            animation: bounce 2s infinite;
+        }
 
-.gender-btn {
-    display: inline-block;
-    padding: 12px 28px;
-    background-color: transparent;
-    color: white;
-    text-decoration: none;
-    border-radius: 30px;
-    border: 1px solid white;
-    transition: all 0.3s ease;
-    font-weight: 600;
-    font-size: 14px;
-    letter-spacing: 0.5px;
-    margin-right: 10px;
-}
+        .scroll-indicator::before {
+            content: '';
+            display: block;
+            width: 1px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.5);
+            margin: 0 auto 10px;
+        }
 
-.gender-btn:hover {
-    background-color: var(--secondary);
-}
+        .scroll-text {
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
 
-.gender-buttons {
-    margin-top: 20px;
-}
+        /* Floating Elements */
+        .floating-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .floating-element {
+            position: absolute;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .floating-element:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-element:nth-child(2) {
+            width: 60px;
+            height: 60px;
+            top: 60%;
+            right: 15%;
+            animation-delay: 2s;
+        }
+
+        .floating-element:nth-child(3) {
+            width: 40px;
+            height: 40px;
+            top: 30%;
+            right: 25%;
+            animation-delay: 4s;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 60px;
+            z-index: 3;
+            animation: fadeInUp 2s ease-out 1.5s both;
+        }
+
+        .stat-item {
+            text-align: center;
+            color: white;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            40% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+            60% {
+                transform: translateX(-50%) translateY(-5px);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero {
+                height: 100vh;
+            }
+            
+            .stats-bar {
+                gap: 30px;
+                bottom: 120px;
+            }
+            
+            .stat-number {
+                font-size: 1.5rem;
+            }
+            
+            .floating-element {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-bar {
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
 
 /* Mobile menu button */
 .menu-toggle {
@@ -2445,26 +2596,75 @@ footer {
         <a href="contact.php">CONTACT</a>
     </nav>
     
-    <!-- Hero Section with Video -->
     <section class="hero">
         <!-- Video Background -->
         <video class="hero-video" autoplay loop muted playsinline>
             <source src="images/homevid.mp4" type="video/mp4">
             Your browser does not support the video tag.
         </video>
+        
         <div class="hero-overlay"></div>
         
+        <!-- Floating Decorative Elements -->
+        <div class="floating-elements">
+            <div class="floating-element"></div>
+            <div class="floating-element"></div>
+            <div class="floating-element"></div>
+        </div>
+        
         <div class="hero-content">
-            <h1>PERFORMANCE MEETS STYLE</h1>
-            <p>Discover the latest collection of activewear designed for maximum comfort and performance.</p>
-            
-            
-            <div class="gender-buttons">
-                <a href="men.php" class="gender-btn">FOR HIM</a>
-                <a href="women.php" class="gender-btn">FOR HER</a>
+            <div class="brand-logo">Hiraya<span>Fit</span></div>
+            <h1>WHERE<br>PERFORMANCE<br>MEETS STYLE</h1>
+            <p class="hero-subtitle">Engineered for athletes. Designed for life.<br>Experience the perfect fusion of innovation and elegance.</p>
+        </div>
+        
+        <!-- Performance Stats 
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-number">24/7</span>
+                <span class="stat-label">Comfort</span>
             </div>
+            <div class="stat-item">
+                <span class="stat-number">100%</span>
+                <span class="stat-label">Performance</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">∞</span>
+                <span class="stat-label">Style</span>
+            </div>
+        </div>-->
+        
+        <!-- Scroll Indicator -->
+        <div class="scroll-indicator">
+            <div class="scroll-text">Explore</div>
         </div>
     </section>
+
+    <script>
+        // Add parallax effect to video
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const video = document.querySelector('.hero-video');
+            const rate = scrolled * -0.5;
+            video.style.transform = `translate(-50%, calc(-50% + ${rate}px))`;
+        });
+
+        // Add dynamic text animation
+        const title = document.querySelector('.hero h1');
+        const words = title.innerHTML.split('<br>');
+        title.innerHTML = '';
+        
+        words.forEach((word, index) => {
+            const span = document.createElement('span');
+            span.innerHTML = word;
+            span.style.display = 'block';
+            span.style.animation = `fadeInUp 1s ease-out ${0.5 + index * 0.3}s both`;
+            title.appendChild(span);
+            if (index < words.length - 1) {
+                title.appendChild(document.createElement('br'));
+            }
+        });
+    </script>
     
     
     <!-- Featured Categories Section -->
@@ -2533,7 +2733,7 @@ footer {
                         <div class="collection-content">
                             <h3>Performance Essentials</h3>
                             <p>Engineered for comfort and durability</p>
-                            <a href="men.php" class="btn">SHOP MEN</a>
+                        
                         </div>
                     </div>
                 </div>
@@ -2541,12 +2741,12 @@ footer {
             
             <div class="collection-item women">
                 <div class="collection-image">
-                    <img src="images/f.jfif" alt="Women's Featured Collection">
+                    <img src="images/womenf.jpg" alt="Women's Featured Collection">
                     <div class="collection-overlay">
                         <div class="collection-content">
                             <h3>Active Lifestyle</h3>
                             <p>Stylish designs for every workout</p>
-                            <a href="women.php" class="btn">SHOP WOMEN</a>
+                           
                         </div>
                     </div>
                 </div>
@@ -2571,7 +2771,7 @@ footer {
             <div class="shop-promo-left">
                 <div class="promo-card about">
                     <div class="promo-image">
-                        <img src="images/about-us.jpg" alt="About Our Company">
+                        <img src="images/abt-us.jpg" alt="About Our Company">
                     </div>
                     <div class="promo-content">
                         <h3>About Us</h3>
@@ -2584,7 +2784,7 @@ footer {
             <div class="shop-promo-right">
                 <div class="promo-card contact">
                     <div class="promo-image">
-                        <img src="images/contact-us.jpg" alt="Contact Our Team">
+                        <img src="images/contactus.jpg" alt="Contact Our Team">
                     </div>
                     <div class="promo-content">
                         <h3>Contact Us</h3>
@@ -3642,7 +3842,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
 </script>
 
+<button id="scrollUpBtn" title="Go to top">↑</button>
+<script>
+  // Kunin ang button
+  const scrollBtn = document.getElementById("scrollUpBtn");
 
+  // Kapag nag-scroll, i-check kung lalabas ang button
+  window.onscroll = function() {
+    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+      scrollBtn.style.display = "block";
+    } else {
+      scrollBtn.style.display = "none";
+    }
+  };
+
+  // Kapag na-click, umakyat sa taas
+  scrollBtn.onclick = function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+</script>
 
 
 </body>

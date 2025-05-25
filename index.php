@@ -2537,6 +2537,37 @@ footer {
 }
 
 
+        /* Scroll to top button styles */
+        #scrollUpBtn {
+            display: none; /* Nakatago sa umpisa */
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 99;
+            font-size: 18px;
+            border: none;
+            outline: none;
+            background-color: var(--secondary);
+            color: var(--light);
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        
+        #scrollUpBtn:hover {
+            background-color: var(--primary);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            #scrollUpBtn {
+                bottom: 20px;
+                right: 20px;
+                font-size: 16px;
+                padding: 12px;
+            }
+        }
 
     </style>
 </head>
@@ -3842,7 +3873,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
 </script>
 
+<button id="scrollUpBtn" title="Go to top">↑</button>
+<script>
+  // Kunin ang button
+  const scrollBtn = document.getElementById("scrollUpBtn");
 
+  // Kapag nag-scroll, i-check kung lalabas ang button
+  window.onscroll = function() {
+    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+      scrollBtn.style.display = "block";
+    } else {
+      scrollBtn.style.display = "none";
+    }
+  };
+
+  // Kapag na-click, umakyat sa taas
+  scrollBtn.onclick = function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+</script>
 
 
 </body>

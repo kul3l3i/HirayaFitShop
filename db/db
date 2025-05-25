@@ -163,3 +163,17 @@ SELECT 'user', id, TRUE, TRUE FROM users;
 
 INSERT INTO notification_preferences (user_type, user_id, email_notifications, push_notifications)
 SELECT 'admin', admin_id, TRUE, TRUE FROM admins;
+
+
+
+CREATE TABLE reviews (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    product_id VARCHAR(50) NOT NULL,
+    transaction_id VARCHAR(100) NOT NULL,
+    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    review_text TEXT NOT NULL,
+    review_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_review (user_id, product_id, transaction_id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
