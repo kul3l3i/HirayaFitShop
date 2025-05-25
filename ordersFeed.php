@@ -10,61 +10,114 @@ include 'db_connect.php';
 // Initialize variables
 $error = '';
 $username_email = '';
+
 // Check if user is logged in
 $loggedIn = isset($_SESSION['user_id']);
 $user = null;
 
 // If user is not logged in, redirect to login page
 if (!$loggedIn) {
-    header("Location:sign-in.php");
+    header("Location: sign-in.php");
     exit();
 }
 
-
-
 // Fetch user details
-$stmt = $conn->prepare("SELECT id, fullname, username, email, address, phone, profile_image FROM users WHERE id = ?");
-$stmt->bind_param("i", $_SESSION['user_id']);
-$stmt->execute();
-$result = $stmt->get_result();
+try {
+    $stmt = $conn->prepare("SELECT id, fullname, username, email, address, phone, profile_image FROM users WHERE id = ?");
+    if (!$stmt) {
+        throw new Exception("Database prepare failed: " . $conn->error);
+    }
+    
+    $stmt->bind_param("i", $_SESSION['user_id']);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-// If user exists, store their details
-if ($result->num_rows > 0) {
-    $user = $result->fetch_assoc();
+    // If user exists, store their details
+    if ($result->num_rows > 0) {
+        $user = $result->fetch_assoc();
+    } else {
+        // User not found in database, destroy session and redirect
+        session_destroy();
+        header("Location: sign-in.php?error=user_not_found");
+        exit();
+    }
+
+    $stmt->close();
+} catch (Exception $e) {
+    error_log("Database error in orders.php: " . $e->getMessage());
+    $error = "Database connection error. Please try again later.";
 }
 
-$stmt->close();
 $conn->close();
+
+// Function to safely load XML file
+function loadXMLFile($filename) {
+    if (!file_exists($filename)) {
+        return false;
+    }
+    
+    if (!is_readable($filename)) {
+        error_log("XML file is not readable: " . $filename);
+        return false;
+    }
+    
+    // Disable external entity loading for security
+    libxml_disable_entity_loader(true);
+    
+    try {
+        $xmlContent = file_get_contents($filename);
+        if ($xmlContent === false) {
+            error_log("Failed to read XML file: " . $filename);
+            return false;
+        }
+        
+        $xml = simplexml_load_string($xmlContent);
+        if ($xml === false) {
+            error_log("Failed to parse XML file: " . $filename);
+            return false;
+        }
+        
+        return $xml;
+    } catch (Exception $e) {
+        error_log("Exception loading XML file {$filename}: " . $e->getMessage());
+        return false;
+    }
+}
 
 // Load all user transactions from XML
 function loadUserTransactions($userId) {
     $transactions = [];
     
-    if (file_exists('transaction.xml')) {
-        $xml = simplexml_load_file('transaction.xml');
-        
-        foreach ($xml->transaction as $transaction) {
-            if ((int) $transaction->user_id == $userId) {
-                $transactions[] = [
-                    'transaction_id' => (string) $transaction->transaction_id,
-                    'transaction_date' => (string) $transaction->transaction_date,
-                    'status' => (string) $transaction->status,
-                    'subtotal' => (float) $transaction->subtotal,
-                    'shipping_fee' => (float) $transaction->shipping_fee,
-                    'total_amount' => (float) $transaction->total_amount,
-                    'payment_method' => isset($transaction->payment_method) ? (string) $transaction->payment_method : '',
-                    'shipping_info' => isset($transaction->shipping_info) ? parseShippingInfo($transaction->shipping_info) : null,
-                    'items' => parseTransactionItems($transaction->items),
-                    'item_count' => count($transaction->items->item)
-                ];
-            }
-        }
-        
-        // Sort transactions by date (newest first)
-        usort($transactions, function($a, $b) {
-            return strtotime($b['transaction_date']) - strtotime($a['transaction_date']);
-        });
+    $xml = loadXMLFile('transaction.xml');
+    if ($xml === false) {
+        return $transactions; // Return empty array if file doesn't exist or can't be loaded
     }
+    
+    if (!isset($xml->transaction)) {
+        return $transactions; // No transactions in XML
+    }
+    
+    foreach ($xml->transaction as $transaction) {
+        if ((int) $transaction->user_id == $userId) {
+            $transactions[] = [
+                'transaction_id' => (string) $transaction->transaction_id,
+                'transaction_date' => (string) $transaction->transaction_date,
+                'status' => (string) $transaction->status,
+                'subtotal' => (float) $transaction->subtotal,
+                'shipping_fee' => (float) $transaction->shipping_fee,
+                'total_amount' => (float) $transaction->total_amount,
+                'payment_method' => isset($transaction->payment_method) ? (string) $transaction->payment_method : '',
+                'shipping_info' => isset($transaction->shipping_info) ? parseShippingInfo($transaction->shipping_info) : null,
+                'items' => parseTransactionItems($transaction->items ?? new SimpleXMLElement('<items></items>')),
+                'item_count' => isset($transaction->items->item) ? count($transaction->items->item) : 0
+            ];
+        }
+    }
+    
+    // Sort transactions by date (newest first)
+    usort($transactions, function($a, $b) {
+        return strtotime($b['transaction_date']) - strtotime($a['transaction_date']);
+    });
     
     return $transactions;
 }
@@ -75,28 +128,32 @@ function parseShippingInfo($shippingNode) {
     }
     
     return [
-        'fullname' => (string) $shippingNode->fullname,
-        'email' => (string) $shippingNode->email,
-        'phone' => (string) $shippingNode->phone,
-        'address' => (string) $shippingNode->address,
-        'city' => (string) $shippingNode->city,
-        'postal_code' => (string) $shippingNode->postal_code,
-        'notes' => (string) $shippingNode->notes
+        'fullname' => (string) ($shippingNode->fullname ?? ''),
+        'email' => (string) ($shippingNode->email ?? ''),
+        'phone' => (string) ($shippingNode->phone ?? ''),
+        'address' => (string) ($shippingNode->address ?? ''),
+        'city' => (string) ($shippingNode->city ?? ''),
+        'postal_code' => (string) ($shippingNode->postal_code ?? ''),
+        'notes' => (string) ($shippingNode->notes ?? '')
     ];
 }
 
 function parseTransactionItems($itemsNode) {
     $items = [];
     
+    if (!$itemsNode || !isset($itemsNode->item)) {
+        return $items;
+    }
+    
     foreach ($itemsNode->item as $item) {
         $items[] = [
-            'product_id' => (string) $item->product_id,
-            'product_name' => (string) $item->product_name,
-            'price' => (float) $item->price,
-            'quantity' => (int) $item->quantity,
-            'color' => (string) $item->color,
-            'size' => (string) $item->size,
-            'subtotal' => (float) $item->subtotal
+            'product_id' => (string) ($item->product_id ?? ''),
+            'product_name' => (string) ($item->product_name ?? ''),
+            'price' => (float) ($item->price ?? 0),
+            'quantity' => (int) ($item->quantity ?? 1),
+            'color' => (string) ($item->color ?? ''),
+            'size' => (string) ($item->size ?? ''),
+            'subtotal' => (float) ($item->subtotal ?? 0)
         ];
     }
     
@@ -105,56 +162,27 @@ function parseTransactionItems($itemsNode) {
 
 // Function to format payment method display
 function formatPaymentMethod($paymentMethod) {
-    switch ($paymentMethod) {
-        case 'cod':
-            return 'Cash on Delivery';
-        case 'gcash':
-            return 'GCash';
-        case 'paymaya':
-            return 'PayMaya';
-        case 'bank_transfer':
-            return 'Bank Transfer';
-        default:
-            return ucfirst($paymentMethod);
-    }
+    $methods = [
+        'cod' => 'Cash on Delivery',
+        'gcash' => 'GCash',
+        'paymaya' => 'PayMaya',
+        'bank_transfer' => 'Bank Transfer'
+    ];
+    
+    return $methods[$paymentMethod] ?? ucfirst(str_replace('_', ' ', $paymentMethod));
 }
 
 // Function to format order status with appropriate colors
 function formatOrderStatus($status) {
-    switch ($status) {
-        case 'pending':
-            return '<span class="status-badge pending">Pending</span>';
-        case 'processing':
-            return '<span class="status-badge processing">Processing</span>';
-        case 'shipped':
-            return '<span class="status-badge shipped">Shipped</span>';
-        case 'delivered':
-            return '<span class="status-badge delivered">Delivered</span>';
-        case 'cancelled':
-            return '<span class="status-badge cancelled">Cancelled</span>';
-        default:
-            return '<span class="status-badge">' . ucfirst($status) . '</span>';
-    }
-}
-
-// Load all user transactions
-$transactions = loadUserTransactions($_SESSION['user_id']);
-
-// Check if viewing a specific order
-$viewingOrder = false;
-$currentOrder = null;
-
-if (isset($_GET['order_id']) && !empty($_GET['order_id'])) {
-    $orderID = $_GET['order_id'];
+    $statusMap = [
+        'pending' => '<span class="status-badge pending">Pending</span>',
+        'processing' => '<span class="status-badge processing">Processing</span>',
+        'shipped' => '<span class="status-badge shipped">Shipped</span>',
+        'delivered' => '<span class="status-badge delivered">Delivered</span>',
+        'cancelled' => '<span class="status-badge cancelled">Cancelled</span>'
+    ];
     
-    // Find the specific order
-    foreach ($transactions as $transaction) {
-        if ($transaction['transaction_id'] == $orderID) {
-            $currentOrder = $transaction;
-            $viewingOrder = true;
-            break;
-        }
-    }
+    return $statusMap[$status] ?? '<span class="status-badge">' . htmlspecialchars(ucfirst($status)) . '</span>';
 }
 
 // Calculate expected delivery days based on status
@@ -182,42 +210,38 @@ function getExpectedDelivery($status, $orderDate) {
 
 // Get progress value based on status
 function getProgressValue($status) {
-    switch ($status) {
-        case 'pending':
-            return 25;
-        case 'processing':
-            return 50;
-        case 'shipped':
-            return 75;
-        case 'delivered':
-            return 100;
-        case 'cancelled':
-            return 0;
-        default:
-            return 25;
-    }
+    $progressMap = [
+        'pending' => 25,
+        'processing' => 50,
+        'shipped' => 75,
+        'delivered' => 100,
+        'cancelled' => 0
+    ];
+    
+    return $progressMap[$status] ?? 25;
 }
 
 // Function to load reviews from XML
 function loadReviews() {
     $reviews = [];
     
-    if (file_exists('reviews.xml')) {
-        $xml = simplexml_load_file('reviews.xml');
-        
-        if ($xml && $xml->review) {
-            foreach ($xml->review as $review) {
-                $reviews[] = [
-                    'review_id' => (string) $review->review_id,
-                    'user_id' => (int) $review->user_id,
-                    'transaction_id' => (string) $review->transaction_id,
-                    'product_id' => (string) $review->product_id,
-                    'rating' => (int) $review->rating,
-                    'review_text' => (string) $review->review_text,
-                    'review_date' => (string) $review->review_date,
-                    'username' => (string) $review->username
-                ];
-            }
+    $xml = loadXMLFile('reviews.xml');
+    if ($xml === false) {
+        return $reviews;
+    }
+    
+    if (isset($xml->review)) {
+        foreach ($xml->review as $review) {
+            $reviews[] = [
+                'review_id' => (string) ($review->review_id ?? ''),
+                'user_id' => (int) ($review->user_id ?? 0),
+                'transaction_id' => (string) ($review->transaction_id ?? ''),
+                'product_id' => (string) ($review->product_id ?? ''),
+                'rating' => (int) ($review->rating ?? 0),
+                'review_text' => (string) ($review->review_text ?? ''),
+                'review_date' => (string) ($review->review_date ?? ''),
+                'username' => (string) ($review->username ?? '')
+            ];
         }
     }
     
@@ -228,31 +252,52 @@ function loadReviews() {
 function saveReview($userId, $transactionId, $productId, $rating, $reviewText, $username) {
     $reviewId = 'REV_' . time() . '_' . rand(1000, 9999);
     $reviewDate = date('Y-m-d H:i:s');
+    $xmlFile = 'reviews.xml';
     
     // Load existing XML or create new one
-    if (file_exists('reviews.xml')) {
-        $xml = simplexml_load_file('reviews.xml');
-    } else {
+    $xml = loadXMLFile($xmlFile);
+    if ($xml === false) {
+        // Create new XML structure
         $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><reviews></reviews>');
     }
     
     // Add new review
     $review = $xml->addChild('review');
-    $review->addChild('review_id', htmlspecialchars($reviewId));
-    $review->addChild('user_id', $userId);
-    $review->addChild('transaction_id', htmlspecialchars($transactionId));
-    $review->addChild('product_id', htmlspecialchars($productId));
-    $review->addChild('rating', $rating);
-    $review->addChild('review_text', htmlspecialchars($reviewText));
+    $review->addChild('review_id', htmlspecialchars($reviewId, ENT_XML1, 'UTF-8'));
+    $review->addChild('user_id', intval($userId));
+    $review->addChild('transaction_id', htmlspecialchars($transactionId, ENT_XML1, 'UTF-8'));
+    $review->addChild('product_id', htmlspecialchars($productId, ENT_XML1, 'UTF-8'));
+    $review->addChild('rating', intval($rating));
+    $review->addChild('review_text', htmlspecialchars($reviewText, ENT_XML1, 'UTF-8'));
     $review->addChild('review_date', $reviewDate);
-    $review->addChild('username', htmlspecialchars($username));
+    $review->addChild('username', htmlspecialchars($username, ENT_XML1, 'UTF-8'));
     
     // Save XML file
-    $dom = new DOMDocument('1.0', 'UTF-8');
-    $dom->formatOutput = true;
-    $dom->loadXML($xml->asXML());
-    
-    return $dom->save('reviews.xml');
+    try {
+        $dom = new DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = true;
+        $dom->loadXML($xml->asXML());
+        
+        // Attempt to save the file
+        $result = $dom->save($xmlFile);
+        
+        if ($result === false) {
+            error_log("Failed to save reviews XML file: " . $xmlFile);
+            return false;
+        }
+        
+        // Verify the file was written correctly
+        if (!file_exists($xmlFile) || filesize($xmlFile) == 0) {
+            error_log("Reviews XML file appears to be empty after save: " . $xmlFile);
+            return false;
+        }
+        
+        return true;
+        
+    } catch (Exception $e) {
+        error_log("Exception while saving review: " . $e->getMessage());
+        return false;
+    }
 }
 
 // Function to check if user has already reviewed a product from a specific transaction
@@ -270,36 +315,102 @@ function hasUserReviewed($userId, $transactionId, $productId) {
     return false;
 }
 
+// Validate CSRF token
+function validateCSRFToken($token) {
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+// Generate CSRF token
+function generateCSRFToken() {
+    if (!isset($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+// Load all user transactions
+$transactions = [];
+if ($user) {
+    $transactions = loadUserTransactions($_SESSION['user_id']);
+}
+
+// Check if viewing a specific order
+$viewingOrder = false;
+$currentOrder = null;
+
+if (isset($_GET['order_id']) && !empty($_GET['order_id'])) {
+    $orderID = htmlspecialchars($_GET['order_id'], ENT_QUOTES, 'UTF-8');
+    
+    // Find the specific order
+    foreach ($transactions as $transaction) {
+        if ($transaction['transaction_id'] == $orderID) {
+            $currentOrder = $transaction;
+            $viewingOrder = true;
+            break;
+        }
+    }
+    
+    // If order not found, redirect to orders page
+    if (!$viewingOrder) {
+        header("Location: orders.php?error=order_not_found");
+        exit();
+    }
+}
+
 // Handle review submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
     $response = ['success' => false, 'message' => ''];
     
-    $transactionId = $_POST['transaction_id'] ?? '';
-    $productId = $_POST['product_id'] ?? '';
-    $rating = intval($_POST['rating'] ?? 0);
-    $reviewText = trim($_POST['review_text'] ?? '');
-    
-    // Validation
-    if (empty($transactionId) || empty($productId)) {
-        $response['message'] = 'Invalid transaction or product information.';
-    } elseif ($rating < 1 || $rating > 5) {
-        $response['message'] = 'Please select a rating between 1 and 5 stars.';
-    } elseif (empty($reviewText)) {
-        $response['message'] = 'Please write a review.';
-    } elseif (hasUserReviewed($_SESSION['user_id'], $transactionId, $productId)) {
-        $response['message'] = 'You have already reviewed this product.';
+    // Validate CSRF token
+    if (!isset($_POST['csrf_token']) || !validateCSRFToken($_POST['csrf_token'])) {
+        $response['message'] = 'Invalid security token. Please refresh the page and try again.';
     } else {
-        // Save the review
-        if (saveReview($_SESSION['user_id'], $transactionId, $productId, $rating, $reviewText, $user['username'])) {
-            $response['success'] = true;
-            $response['message'] = 'Thank you for your review!';
+        $transactionId = trim($_POST['transaction_id'] ?? '');
+        $productId = trim($_POST['product_id'] ?? '');
+        $rating = intval($_POST['rating'] ?? 0);
+        $reviewText = trim($_POST['review_text'] ?? '');
+        
+        // Input validation
+        if (empty($transactionId) || empty($productId)) {
+            $response['message'] = 'Invalid transaction or product information.';
+        } elseif ($rating < 1 || $rating > 5) {
+            $response['message'] = 'Please select a rating between 1 and 5 stars.';
+        } elseif (empty($reviewText)) {
+            $response['message'] = 'Please write a review.';
+        } elseif (strlen($reviewText) > 500) {
+            $response['message'] = 'Review text cannot exceed 500 characters.';
+        } elseif (hasUserReviewed($_SESSION['user_id'], $transactionId, $productId)) {
+            $response['message'] = 'You have already reviewed this product.';
         } else {
-            $response['message'] = 'Failed to save review. Please try again.';
+            // Verify that the user actually purchased this product in this transaction
+            $validPurchase = false;
+            foreach ($transactions as $transaction) {
+                if ($transaction['transaction_id'] == $transactionId) {
+                    foreach ($transaction['items'] as $item) {
+                        if ($item['product_id'] == $productId) {
+                            $validPurchase = true;
+                            break 2;
+                        }
+                    }
+                }
+            }
+            
+            if (!$validPurchase) {
+                $response['message'] = 'You can only review products you have purchased.';
+            } else {
+                // Save the review
+                if (saveReview($_SESSION['user_id'], $transactionId, $productId, $rating, $reviewText, $user['username'])) {
+                    $response['success'] = true;
+                    $response['message'] = 'Thank you for your review!';
+                } else {
+                    $response['message'] = 'Failed to save review. Please try again.';
+                }
+            }
         }
     }
     
     // Return JSON response for AJAX
-    if (isset($_POST['ajax'])) {
+    if (isset($_POST['ajax']) && $_POST['ajax'] == '1') {
         header('Content-Type: application/json');
         echo json_encode($response);
         exit;
@@ -310,27 +421,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
     $_SESSION['review_success'] = $response['success'];
     
     // Redirect to prevent resubmission
-    header("Location: orders.php?order_id=" . $transactionId);
+    $redirectUrl = !empty($transactionId) ? "orders.php?order_id=" . urlencode($transactionId) : "orders.php";
+    header("Location: " . $redirectUrl);
     exit;
 }
 
-// Get existing reviews for current order items
-$orderReviews = [];
-if ($viewingOrder && $currentOrder) {
-    $allReviews = loadReviews();
-    foreach ($currentOrder['items'] as $item) {
-        foreach ($allReviews as $review) {
-            if ($review['user_id'] == $_SESSION['user_id'] && 
-                $review['transaction_id'] == $currentOrder['transaction_id'] && 
-                $review['product_id'] == $item['product_id']) {
-                $orderReviews[$item['product_id']] = $review;
-                break;
-            }
-        }
-    }
-}
-?>
-
+// Generate CSRF token for forms
+$csrfToken = generateCSRFToken();
 ?>
 
 <!DOCTYPE html>
@@ -343,6 +440,370 @@ if ($viewingOrder && $currentOrder) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style/usershop.css">
     <link rel="stylesheet" href="style/orders.css">
+    <style>
+        /* Review Modal Styles */
+        .review-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .review-modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .review-modal {
+            background: white;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+
+        .review-modal-overlay.show .review-modal {
+            transform: scale(1);
+        }
+
+        .review-modal-header {
+            padding: 24px 24px 0;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 24px;
+        }
+
+        .review-modal-header h2 {
+            margin: 0 0 8px;
+            color: #333;
+            font-size: 24px;
+        }
+
+        .review-modal-header p {
+            margin: 0 0 16px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #999;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .review-modal-body {
+            padding: 0 24px 24px;
+        }
+
+        .product-review-item {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+
+        .product-review-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .product-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .product-image {
+            width: 60px;
+            height: 60px;
+            background: #ddd;
+            border-radius: 8px;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+        }
+
+        .product-details h4 {
+            margin: 0 0 4px;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .product-details p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .rating-section {
+            margin-bottom: 16px;
+        }
+
+        .rating-section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .star {
+            font-size: 24px;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .star:hover,
+        .star.active {
+            color: #ffd700;
+        }
+
+        .rating-text {
+            font-size: 12px;
+            color: #666;
+            margin-left: 8px;
+        }
+
+        .review-text-section {
+            margin-bottom: 20px;
+        }
+
+        .review-text-section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .review-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .review-textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+        }
+
+        .char-counter {
+            text-align: right;
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .existing-review {
+            background: #e8f5e8;
+            border-color: #4caf50;
+            position: relative;
+        }
+
+        .existing-review::before {
+            content: '✓';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #4caf50;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .existing-review-content {
+            margin-top: 16px;
+            padding: 12px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .existing-rating {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .existing-rating .star {
+            font-size: 16px;
+            cursor: default;
+        }
+
+        .existing-review-text {
+            color: #333;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .review-date {
+            color: #666;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+        }
+
+        .btn-cancel {
+            padding: 10px 20px;
+            border: 1px solid #ddd;
+            background: white;
+            color: #666;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #f5f5f5;
+            border-color: #999;
+        }
+
+        .btn-submit-reviews {
+            padding: 10px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-submit-reviews:hover {
+            background: #0056b3;
+        }
+
+        .btn-submit-reviews:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .review-modal {
+                margin: 20px;
+                max-height: calc(100vh - 40px);
+            }
+            
+            .review-modal-header,
+            .review-modal-body {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+        }
+
+        /* Demo styles for the button */
+        .demo-container {
+            padding: 50px;
+            text-align: center;
+        }
+
+        .btn-write-review {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-write-review:hover {
+            background: #0056b3;
+        }
+    </style>
 </head>
 
 <body>
@@ -797,6 +1258,357 @@ if ($viewingOrder && $currentOrder) {
             });
         });
     </script>
+
+
+<!-- Add this modal HTML before the closing body tag -->
+
+<!-- Review Modal -->
+<div class="review-modal-overlay" id="reviewModal">
+    <div class="review-modal">
+        <div class="review-modal-header">
+            <h2>Write a Review</h2>
+            <p>Share your experience with your purchased items</p>
+            <button class="modal-close" onclick="closeReviewModal()">×</button>
+        </div>
+        <div class="review-modal-body">
+            <div id="reviewAlert"></div>
+            <form id="reviewForm" method="POST">
+                <input type="hidden" name="ajax" value="1">
+                <div id="reviewProductsContainer">
+                    <!-- Products will be dynamically loaded here -->
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeReviewModal()">Cancel</button>
+                    <button type="submit" class="btn-submit-reviews" id="submitReviewsBtn">
+                        Submit Reviews
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Review Modal JavaScript
+let currentOrderForReview = null;
+
+// Open review modal
+function openReviewModal(orderData) {
+    currentOrderForReview = orderData;
+    const modal = document.getElementById('reviewModal');
+    const container = document.getElementById('reviewProductsContainer');
+    
+    // Clear previous content
+    container.innerHTML = '';
+    
+    // Add each product for review
+    orderData.items.forEach(item => {
+        const hasExistingReview = orderData.reviews && orderData.reviews[item.product_id];
+        
+        const productReviewHtml = `
+            <div class="product-review-item ${hasExistingReview ? 'existing-review' : ''}" data-product-id="${item.product_id}">
+                <div class="product-info">
+                    <div class="product-image">
+                        <i class="fas fa-tshirt"></i>
+                    </div>
+                    <div class="product-details">
+                        <h4>${escapeHtml(item.product_name)}</h4>
+                        <p>Color: ${escapeHtml(item.color)}, Size: ${escapeHtml(item.size)}</p>
+                    </div>
+                </div>
+                
+                ${hasExistingReview ? `
+                    <div class="existing-review-content">
+                        <div class="existing-rating">
+                            ${generateStarDisplay(orderData.reviews[item.product_id].rating)}
+                            <span class="rating-text">${orderData.reviews[item.product_id].rating}/5 stars</span>
+                        </div>
+                        <div class="existing-review-text">${escapeHtml(orderData.reviews[item.product_id].review_text)}</div>
+                        <div class="review-date">Reviewed on ${formatDate(orderData.reviews[item.product_id].review_date)}</div>
+                    </div>
+                ` : `
+                    <div class="rating-section">
+                        <label>Rating *</label>
+                        <div class="star-rating" data-product-id="${item.product_id}">
+                            <span class="star" data-rating="1">★</span>
+                            <span class="star" data-rating="2">★</span>
+                            <span class="star" data-rating="3">★</span>
+                            <span class="star" data-rating="4">★</span>
+                            <span class="star" data-rating="5">★</span>
+                        </div>
+                        <span class="rating-text" id="ratingText_${item.product_id}">Select a rating</span>
+                        <input type="hidden" name="ratings[${item.product_id}]" id="rating_${item.product_id}" value="0">
+                        <input type="hidden" name="transaction_id" value="${orderData.transaction_id}">
+                    </div>
+                    
+                    <div class="review-text-section">
+                        <label for="review_${item.product_id}">Your Review *</label>
+                        <textarea 
+                            class="review-textarea" 
+                            id="review_${item.product_id}" 
+                            name="reviews[${item.product_id}]" 
+                            placeholder="Share your experience with this product..."
+                            maxlength="500"
+                            required
+                        ></textarea>
+                        <div class="char-counter">
+                            <span id="charCount_${item.product_id}">0</span>/500 characters
+                        </div>
+                    </div>
+                `}
+            </div>
+        `;
+        
+        container.innerHTML += productReviewHtml;
+    });
+    
+    // Show modal
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    
+    // Initialize star ratings and character counters for new reviews
+    initializeReviewControls();
+}
+
+// Close review modal
+function closeReviewModal() {
+    const modal = document.getElementById('reviewModal');
+    modal.classList.remove('show');
+    document.body.style.overflow = '';
+    
+    // Clear form
+    document.getElementById('reviewForm').reset();
+    document.getElementById('reviewAlert').innerHTML = '';
+}
+
+// Initialize review controls
+function initializeReviewControls() {
+    // Star rating functionality
+    document.querySelectorAll('.star-rating').forEach(ratingContainer => {
+        const productId = ratingContainer.getAttribute('data-product-id');
+        const stars = ratingContainer.querySelectorAll('.star');
+        const ratingInput = document.getElementById(`rating_${productId}`);
+        const ratingText = document.getElementById(`ratingText_${productId}`);
+        
+        stars.forEach((star, index) => {
+            star.addEventListener('mouseover', () => {
+                highlightStars(stars, index + 1);
+            });
+            
+            star.addEventListener('mouseout', () => {
+                const currentRating = parseInt(ratingInput.value) || 0;
+                highlightStars(stars, currentRating);
+            });
+            
+            star.addEventListener('click', () => {
+                const rating = index + 1;
+                ratingInput.value = rating;
+                highlightStars(stars, rating);
+                updateRatingText(ratingText, rating);
+            });
+        });
+    });
+    
+    // Character counter functionality
+    document.querySelectorAll('.review-textarea').forEach(textarea => {
+        const productId = textarea.id.split('_')[1];
+        const charCounter = document.getElementById(`charCount_${productId}`);
+        
+        textarea.addEventListener('input', () => {
+            const count = textarea.value.length;
+            charCounter.textContent = count;
+            
+            if (count > 450) {
+                charCounter.style.color = '#ff6b6b';
+            } else {
+                charCounter.style.color = '#666';
+            }
+        });
+    });
+}
+
+// Highlight stars
+function highlightStars(stars, rating) {
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('active');
+        } else {
+            star.classList.remove('active');
+        }
+    });
+}
+
+// Update rating text
+function updateRatingText(textElement, rating) {
+    const ratingTexts = {
+        1: '1/5 stars - Poor',
+        2: '2/5 stars - Fair', 
+        3: '3/5 stars - Good',
+        4: '4/5 stars - Very Good',
+        5: '5/5 stars - Excellent'
+    };
+    textElement.textContent = ratingTexts[rating] || 'Select a rating';
+}
+
+// Generate star display for existing reviews
+function generateStarDisplay(rating) {
+    let stars = '';
+    for (let i = 1; i <= 5; i++) {
+        stars += `<span class="star ${i <= rating ? 'active' : ''}"">★</span>`;
+    }
+    return stars;
+}
+
+// Format date
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+}
+
+// Escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Handle form submission
+document.getElementById('reviewForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const submitBtn = document.getElementById('submitReviewsBtn');
+    const alertContainer = document.getElementById('reviewAlert');
+    
+    // Validate form
+    let isValid = true;
+    let errorMessage = '';
+    
+    // Check each product that doesn't have an existing review
+    document.querySelectorAll('.product-review-item:not(.existing-review)').forEach(item => {
+        const productId = item.getAttribute('data-product-id');
+        const rating = document.getElementById(`rating_${productId}`).value;
+        const reviewText = document.getElementById(`review_${productId}`).value.trim();
+        
+        if (parseInt(rating) === 0) {
+            isValid = false;
+            errorMessage = 'Please provide a rating for all products.';
+        }
+        
+        if (reviewText === '') {
+            isValid = false;
+            errorMessage = 'Please write a review for all products.';
+        }
+    });
+    
+    if (!isValid) {
+        showAlert(alertContainer, errorMessage, 'error');
+        return;
+    }
+    
+    // Show loading
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="loading-spinner"></span>Submitting...';
+    
+    try {
+        // Submit each review separately
+        const reviewPromises = [];
+        
+        document.querySelectorAll('.product-review-item:not(.existing-review)').forEach(item => {
+            const productId = item.getAttribute('data-product-id');
+            const rating = document.getElementById(`rating_${productId}`).value;
+            const reviewText = document.getElementById(`review_${productId}`).value.trim();
+            
+            const formData = new FormData();
+            formData.append('submit_review', '1');
+            formData.append('ajax', '1');
+            formData.append('transaction_id', currentOrderForReview.transaction_id);
+            formData.append('product_id', productId);
+            formData.append('rating', rating);
+            formData.append('review_text', reviewText);
+            
+            reviewPromises.push(
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                }).then(response => response.json())
+            );
+        });
+        
+        const results = await Promise.all(reviewPromises);
+        
+        // Check if all reviews were successful
+        const allSuccessful = results.every(result => result.success);
+        
+        if (allSuccessful) {
+            showAlert(alertContainer, 'Thank you for your reviews! They have been submitted successfully.', 'success');
+            
+            // Close modal after 2 seconds
+            setTimeout(() => {
+                closeReviewModal();
+                // Refresh page to show updated review status
+                window.location.reload();
+            }, 2000);
+        } else {
+            const failedReviews = results.filter(result => !result.success);
+            showAlert(alertContainer, `Some reviews failed to submit: ${failedReviews[0].message}`, 'error');
+        }
+        
+    } catch (error) {
+        showAlert(alertContainer, 'An error occurred while submitting your reviews. Please try again.', 'error');
+        console.error('Review submission error:', error);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Submit Reviews';
+    }
+});
+
+// Show alert
+function showAlert(container, message, type) {
+    container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Update the existing review button click handler
+document.addEventListener('DOMContentLoaded', function() {
+    // Replace the existing review button functionality
+    const reviewButtons = document.querySelectorAll('.btn-write-review');
+    
+    reviewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Get current order data
+            const orderData = {
+                transaction_id: '<?php echo $currentOrder["transaction_id"] ?? ""; ?>',
+                items: <?php echo json_encode($currentOrder["items"] ?? []); ?>,
+                reviews: <?php echo json_encode($orderReviews ?? []); ?>
+            };
+            
+            if (orderData.transaction_id && orderData.items.length > 0) {
+                openReviewModal(orderData);
+            } else {
+                alert('Unable to load order information for reviews.');
+            }
+        });
+    });
+});
+
+// Close modal when clicking outside
+document.getElementById('reviewModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeReviewModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('reviewModal').classList.contains('show')) {
+        closeReviewModal();
+    }
+});
+</script>
 </body>
 
 </html>

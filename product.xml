@@ -12,8 +12,8 @@
         <category>Men's Activewear</category>
         <category>Women's Activewear</category>
         <category>Footwear</category> <!-- ← Added new category here -->
-   </categories>
-    
+    </categories>
+
     <products>
         <product>
             <id>2001</id>
@@ -23,7 +23,7 @@
             <currency>PHP</currency>
             <description>Breathable, sweat-wicking compression shirt for workouts</description>
             <image>images/mens_compression_shirt.jpg</image>
-            <stock>49</stock>
+            <stock>44</stock>
             <sizes>
                 <size>S</size>
                 <size>M</size>
@@ -746,4 +746,17 @@
             <on_sale>true</on_sale>
         </product>
     </products>
-<stock_history><entry><product_id>2001</product_id><product_name>Men's Compression Shirt</product_name><old_stock>45</old_stock><new_stock>50</new_stock><change>5</change><reason>New Stock Received</reason><admin_id>1</admin_id><admin_name>HirayaFit Admin</admin_name><date>2025-05-22 08:37:26</date></entry></stock_history></store>
+    <stock_history>
+        <entry>
+            <product_id>2001</product_id>
+            <product_name>Men's Compression Shirt</product_name>
+            <old_stock>45</old_stock>
+            <new_stock>50</new_stock>
+            <change>5</change>
+            <reason>New Stock Received</reason>
+            <admin_id>1</admin_id>
+            <admin_name>HirayaFit Admin</admin_name>
+            <date>2025-05-22 08:37:26</date>
+        </entry>
+    </stock_history>
+</store>

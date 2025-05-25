@@ -14,4 +14,16 @@
         <quantity>2</quantity>
         <timestamp>2025-05-25 18:09:17</timestamp>
     </item>
-<item><id>item_683341be88706</id><user_id>1</user_id><product_id>2005</product_id><product_name>Men's Zipper Hoodie</product_name><image>images/mens_zipper_hoodie.jpg</image><price>2000</price><color>gray</color><size>XL</size><quantity>3</quantity><timestamp>2025-05-25 18:13:50</timestamp></item></cart>
+    <item>
+        <id>item_683341be88706</id>
+        <user_id>1</user_id>
+        <product_id>2005</product_id>
+        <product_name>Men's Zipper Hoodie</product_name>
+        <image>images/mens_zipper_hoodie.jpg</image>
+        <price>2000</price>
+        <color>gray</color>
+        <size>XL</size>
+        <quantity>3</quantity>
+        <timestamp>2025-05-25 18:13:50</timestamp>
+    </item>
+</cart>
