@@ -404,7 +404,7 @@ if (isset($_POST['place_order'])) {
                                             <p>Please send your payment to:</p>
                                             <div class="wallet-info">
                                                 <div class="qr-code">
-                                                    <img src="assets/images/gcash-qr.png" alt="GCash QR Code">
+                                                    <img src="images/gcashQR.jpg" alt="GCash QR Code">
                                                 </div>
                                                 <div class="wallet-account">
                                                     <p><strong>Account Name:</strong> HirayaFit Store</p>
