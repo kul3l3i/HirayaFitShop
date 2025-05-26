@@ -1421,7 +1421,37 @@ $selectedTotal = $selectedSubtotal + $shippingFee;
     <script src="js/home.js"></script>
 <script>console.log('After home.js');</script>
 
+<script>
+       // Account dropdown functionality
+       document.addEventListener('DOMContentLoaded', function () {
+            const accountBtn = document.getElementById('accountBtn');
+            const accountDropdown = document.getElementById('accountDropdown');
 
+            if (accountBtn) {
+                accountBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    accountDropdown.classList.toggle('active');
+                });
+            }
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function (e) {
+                if (accountDropdown && !accountDropdown.contains(e.target) && e.target !== accountBtn) {
+                    accountDropdown.classList.remove('active');
+                }
+            });
+
+            // Mobile menu toggle
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const mainNav = document.getElementById('mainNav');
+
+            if (mobileMenuToggle && mainNav) {
+                mobileMenuToggle.addEventListener('click', function () {
+                    mainNav.classList.toggle('active');
+                });
+            }
+        });
+</script>
     <script>
         document.querySelectorAll('.cart-item .update-button').forEach(button => {
             button.addEventListener('click', () => updateCartItem(button));
